@@ -1,4 +1,4 @@
-import emailjs from 'emailjs-com';
+import emailjs from '@emailjs/browser';
 
 // -------------------------------------------------------------------
 // 1️⃣ EmailJS configuration – values are read from .env.local.

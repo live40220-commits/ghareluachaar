@@ -50,6 +50,10 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+  },
 };
 
 export default function RootLayout({
@@ -62,9 +66,6 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${cormorant.variable} h-full antialiased`}
     >
-      <Head>
-        <link rel="icon" href="/favicon.png" />
-      </Head>
       <body className="min-h-full flex flex-col bg-bg-cream text-text-dark font-sans">
         <ShopProvider>
           {children}
