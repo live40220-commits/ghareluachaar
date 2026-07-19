@@ -31,7 +31,7 @@ export const CATEGORIES = [
 ];
 
 export const products: Product[] = [
-  // Pickles Category (using pickle_1.webp to pickle_8.webp)
+  // Pickles Category (using mango_pickle.png to mix_pickle.png)
   {
     id: 'p1',
     name: 'Home Mango Achaar (Aam ka Achaar)',
@@ -39,7 +39,7 @@ export const products: Product[] = [
     category: 'pickles',
     price: 650,
     originalPrice: 850,
-    image: '/images/products/pickle_1.webp',
+    image: '/images/products/new_product_0.jpg',
     rating: 4.9,
     reviewsCount: 142,
     description: 'Our signature homemade mango pickle is crafted using raw green mangoes, cured in premium cold-pressed mustard oil, and infused with secret hand-ground spices passed down through generations.',
@@ -59,7 +59,7 @@ export const products: Product[] = [
     category: 'pickles',
     price: 790,
     originalPrice: 950,
-    image: '/images/products/pickle_2.webp',
+    image: '/images/products/new_product_1.webp',
     rating: 4.8,
     reviewsCount: 88,
     description: 'Lasoora (Glueberry) pickle is a timeless heritage recipe of Punjab. Soft, flavorful, and perfectly cured in pure mustard oil, this pickle delivers an authentic rustic taste.',
@@ -79,7 +79,7 @@ export const products: Product[] = [
     category: 'pickles',
     price: 580,
     originalPrice: 700,
-    image: '/images/products/pickle_3.webp',
+    image: '/images/products/new_product_2.png',
     rating: 4.7,
     reviewsCount: 95,
     description: 'A vibrant combination of seasonal green mangoes, carrots, lemons, green chilies, and lasooray, sun-ripened and preserved in premium mustard oil.',
@@ -99,7 +99,7 @@ export const products: Product[] = [
     category: 'pickles',
     price: 680,
     originalPrice: 800,
-    image: '/images/products/pickle_4.webp',
+    image: '/images/products/new_product_3.png',
     rating: 4.9,
     reviewsCount: 64,
     description: 'A delightful sweet and sour mango pickle sweetened naturally with organic jaggery (gur) and spiced with roasted cumin and black salt.',
@@ -119,7 +119,7 @@ export const products: Product[] = [
     category: 'pickles',
     price: 850,
     originalPrice: 1100,
-    image: '/images/products/pickle_5.webp',
+    image: '/images/products/new_product_4.png',
     rating: 4.8,
     reviewsCount: 110,
     description: 'Whole organic garlic cloves marinated in a tangy mustard oil paste. Over time, the garlic cloves soften into rich, flavorful bites that are great for immunity.',
@@ -139,7 +139,7 @@ export const products: Product[] = [
     category: 'pickles',
     price: 490,
     originalPrice: 600,
-    image: '/images/products/pickle_6.webp',
+    image: '/images/products/new_product_5.webp',
     rating: 4.6,
     reviewsCount: 45,
     description: 'Spicy, hot green chilies sliced and cured with tangy lemons. Perfect for those who love a spicy, tongue-tingling accompaniment with their desi meals.',
@@ -159,7 +159,7 @@ export const products: Product[] = [
     category: 'pickles',
     price: 750,
     originalPrice: 900,
-    image: '/images/products/pickle_7.webp',
+    image: '/images/products/new_product_6.png',
     rating: 4.9,
     reviewsCount: 76,
     description: 'Healthy and tangy, our Amla Pickle brings the superfood benefits of gooseberries direct to your table, spiced with roasted mustard and kalonji seeds.',
@@ -179,7 +179,7 @@ export const products: Product[] = [
     category: 'pickles',
     price: 600,
     originalPrice: 750,
-    image: '/images/products/pickle_8.webp',
+    image: '/images/products/new_product_7.jpg',
     rating: 4.5,
     reviewsCount: 39,
     description: 'Julienned fresh ginger marinated with lemon juice, black salt, and a dash of mustard oil. A digestion booster that is crisp, sour, and mildly hot.',
@@ -193,7 +193,7 @@ export const products: Product[] = [
     discount: 20
   },
 
-  // Murabba Category (using pickle_9.webp to pickle_12.webp)
+  // Murabba Category (using apple_murabba.png to apple_murabba.png)
   {
     id: 'p9',
     name: 'Royal Seb (Apple) Murabba',
@@ -201,7 +201,7 @@ export const products: Product[] = [
     category: 'murabba',
     price: 890,
     originalPrice: 1100,
-    image: '/images/products/pickle_9.webp',
+    image: '/images/products/new_product_8.jpg',
     rating: 4.9,
     reviewsCount: 154,
     description: 'Handpicked fresh sweet Kashmiri apples simmered in cardomom-scented light syrup. Apple Murabba is highly valued in traditional Pakistani medicine for mental focus and energy.',
@@ -221,7 +221,7 @@ export const products: Product[] = [
     category: 'murabba',
     price: 780,
     originalPrice: 950,
-    image: '/images/products/pickle_10.webp',
+    image: '/images/products/new_product_9.jpg',
     rating: 4.8,
     reviewsCount: 120,
     description: 'Whole gooseberries boiled and preserved in a sweet cardomom syrup. Known in Ayurveda and Unani medicine as a powerhouse of vitality and youthfulness.',
@@ -241,7 +241,7 @@ export const products: Product[] = [
     category: 'murabba',
     price: 820,
     originalPrice: 990,
-    image: '/images/products/pickle_11.webp',
+    image: '/images/products/new_product_10.jpg',
     rating: 4.7,
     reviewsCount: 52,
     description: 'Tender ginger chunks preserved in sweet honeyed syrup. A highly effective winter tonic designed to warm the body and relieve chronic respiratory issues.',
@@ -261,7 +261,7 @@ export const products: Product[] = [
     category: 'murabba',
     price: 900,
     originalPrice: 1100,
-    image: '/images/products/pickle_12.webp',
+    image: '/images/products/new_product_11.png',
     rating: 4.8,
     reviewsCount: 78,
     description: 'Traditional Black Myrobalan (Harar) fruit preserved in delicious syrup. Celebrated for centuries as an absolute cure for stomach ailments and cognitive health.',
@@ -275,7 +275,7 @@ export const products: Product[] = [
     discount: 18
   },
 
-  // Chutneys (using pickle_13.webp to pickle_17.webp)
+  // Chutneys (using mix_pickle.png to pickle_17.webp)
   {
     id: 'p13',
     name: 'Khattay Meethay Aam ki Chutney',
@@ -283,7 +283,7 @@ export const products: Product[] = [
     category: 'chutney',
     price: 520,
     originalPrice: 650,
-    image: '/images/products/pickle_13.webp',
+    image: '/images/products/new_product_12.jpg',
     rating: 4.9,
     reviewsCount: 165,
     description: 'A classic sweet, sticky, and spicy mango chutney cooked with nigella seeds, melon seeds, ginger, and red chili flakes. The perfect sidekick for parathas.',
@@ -303,7 +303,7 @@ export const products: Product[] = [
     category: 'chutney',
     price: 480,
     originalPrice: 580,
-    image: '/images/products/pickle_14.webp',
+    image: '/images/products/new_product_13.jpg',
     rating: 4.8,
     reviewsCount: 114,
     description: 'A tangy blend of dried pomegranate seeds (anardana), sour tamarind (imli), fresh mint leaves, green chilies, and roasted spices.',
@@ -317,7 +317,7 @@ export const products: Product[] = [
     discount: 17
   },
 
-  // Honey (using new_arrival_1.webp to new_arrival_2.webp)
+  // Honey (using pure_honey.png to pure_honey.png)
   {
     id: 'p15',
     name: 'Desi Almond & Walnut Honey',
@@ -325,7 +325,7 @@ export const products: Product[] = [
     category: 'honey',
     price: 1850,
     originalPrice: 2200,
-    image: '/images/products/new_arrival_1.webp',
+    image: '/images/products/new_product_14.png',
     rating: 5.0,
     reviewsCount: 48,
     description: 'Premium raw wild honey packed with organic hand-peeled almonds and walnuts. An absolute powerhouse of protein, healthy fats, and natural energy.',
@@ -345,7 +345,7 @@ export const products: Product[] = [
     category: 'honey',
     price: 2400,
     originalPrice: 3000,
-    image: '/images/products/new_arrival_2.webp',
+    image: '/images/products/new_product_15.jpg',
     rating: 4.9,
     reviewsCount: 92,
     description: 'Sourced from the Beri trees of Karak, KPK, our Sidr honey is 100% organic, raw, and unpasteurized. Famous for its thick consistency, rich amber color, and medicinal benefits.',
@@ -359,7 +359,7 @@ export const products: Product[] = [
     discount: 20
   },
 
-  // Masalay (using new_arrival_3.webp to new_arrival_4.webp)
+  // Masalay (using pure_honey.png to pure_honey.png)
   {
     id: 'p17',
     name: 'Handground Garam Masala Powder',
@@ -367,7 +367,7 @@ export const products: Product[] = [
     category: 'masalay',
     price: 450,
     originalPrice: 550,
-    image: '/images/products/new_arrival_3.webp',
+    image: '/images/products/new_product_16.jpg',
     rating: 4.9,
     reviewsCount: 68,
     description: 'A heritage spice blend containing premium black peppercorns, cloves, cinnamon, nutmeg, mace, cardamom, and cumin, stone-ground in small batches to preserve volatile oils.',
@@ -387,7 +387,7 @@ export const products: Product[] = [
     category: 'masalay',
     price: 180,
     originalPrice: 220,
-    image: '/images/products/new_arrival_4.webp',
+    image: '/images/products/new_product_17.jpg',
     rating: 4.8,
     reviewsCount: 40,
     description: 'Sun-dried fenugreek leaves harvested from the fertile fields of Kasur. Known for its distinct sweet-savory aroma that elevates desi curries, karahis, and daal.',
@@ -401,7 +401,7 @@ export const products: Product[] = [
     discount: 18
   },
 
-  // Sauces & Syrups (using new_arrival_5.webp to new_arrival_7.webp)
+  // Sauces & Syrups (using mix_pickle.png to pure_honey.png)
   {
     id: 'p19',
     name: 'Zesty Garlic Chili Sauce',
@@ -409,7 +409,7 @@ export const products: Product[] = [
     category: 'sauces',
     price: 320,
     originalPrice: 400,
-    image: '/images/products/new_arrival_5.webp',
+    image: '/images/products/new_product_18.jpg',
     rating: 4.7,
     reviewsCount: 57,
     description: 'A spicy, tangy homemade table condiment prepared from fresh red chilies, slow-roasted garlic cloves, vinegar, and natural spices.',
@@ -429,7 +429,7 @@ export const products: Product[] = [
     category: 'syrups',
     price: 650,
     originalPrice: 800,
-    image: '/images/products/new_arrival_6.webp',
+    image: '/images/products/new_product_19.jpg',
     rating: 4.9,
     reviewsCount: 82,
     description: 'An elegant traditional cooling syrup crafted from pure sandalwood (sandal) extracts. Excellent for hot summers, serving as a cooling beverage.',
@@ -449,7 +449,7 @@ export const products: Product[] = [
     category: 'syrups',
     price: 950,
     originalPrice: 1200,
-    image: '/images/products/new_arrival_7.webp',
+    image: '/images/products/new_product_20.jpg',
     rating: 5.0,
     reviewsCount: 77,
     description: 'Rich and nourishing syrup prepared with crushed almonds, cardamom, and rose water. Mix with milk for an authentic, energy-dense beverage.',
@@ -463,7 +463,7 @@ export const products: Product[] = [
     discount: 20
   },
 
-  // Bundles (using new_arrival_8.webp)
+  // Bundles (using mango_pickle.png)
   {
     id: 'p22',
     name: 'Gharelu Shahi Dastarkhwan Bundle',
@@ -471,7 +471,7 @@ export const products: Product[] = [
     category: 'bundles',
     price: 2999,
     originalPrice: 3800,
-    image: '/images/products/new_arrival_8.webp',
+    image: '/images/products/new_product_21.jpg',
     rating: 5.0,
     reviewsCount: 33,
     description: 'A majestic gift box featuring our absolute best-sellers: Mango Achaar (500g), Apple Murabba (500g), Anardana Chutney (350g), and Sidr Honey (250g). Saves Rs. 800 + Free Shipping!',

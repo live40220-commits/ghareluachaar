@@ -2,72 +2,185 @@
 
 @theme inline {
   --color-primary: #6A0F0F;
-  --color-secondary: #B8860B;
-  --color-accent: #B8860B;
+  --color-secondary: #C8A96E;
+  --color-accent: #C8A96E;
   --color-bg-cream: #FFFDF8;
-  --color-text-dark: #222222;
+  --color-bg-warm: #FDF6EC;
+  --color-text-dark: #1A1A1A;
+  --color-text-muted: #6B6B6B;
   
+  --font-display: var(--font-cormorant), Georgia, serif;
   --font-serif: var(--font-cormorant), Georgia, serif;
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
 }
 
 :root {
   --background: #FFFDF8;
-  --foreground: #222222;
-  --primary: 106 15 15;
-  --secondary: 184 134 11;
+  --foreground: #1A1A1A;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 body {
   background-color: #FFFDF8;
-  color: #222222;
+  color: #1A1A1A;
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, h4, h5, h6, .font-display {
-  font-family: var(--font-serif), serif;
+  font-family: var(--font-cormorant), Georgia, serif;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 
-/* Custom premium scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ─── Scrollbar ─────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #FFFDF8; }
+::-webkit-scrollbar-thumb { background: #6A0F0F; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #C8A96E; }
+
+/* ─── Marquee Ticker ─────────────────────────────────── */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
-::-webkit-scrollbar-track {
-  background: #FFFDF8;
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
 }
-::-webkit-scrollbar-thumb {
-  background: #6A0F0F;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #B8860B;
+.marquee-track:hover {
+  animation-play-state: paused;
 }
 
-/* Glassmorphism utility */
+/* ─── Glass ──────────────────────────────────────────── */
 .glass {
-  background: rgba(255, 253, 248, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(184, 134, 11, 0.1);
+  background: rgba(255, 253, 248, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
-/* Smooth shadows */
+/* ─── Shadows ────────────────────────────────────────── */
 .shadow-premium {
-  box-shadow: 0 4px 20px -2px rgba(106, 15, 15, 0.05), 0 2px 8px -1px rgba(184, 134, 11, 0.03);
+  box-shadow: 0 2px 16px -2px rgba(106,15,15,0.06), 0 1px 4px -1px rgba(200,169,110,0.04);
 }
-.shadow-premium-hover {
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.shadow-premium-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px -4px rgba(106, 15, 15, 0.12), 0 4px 12px -2px rgba(184, 134, 11, 0.06);
+.shadow-premium-lg {
+  box-shadow: 0 8px 32px -4px rgba(106,15,15,0.12), 0 3px 10px -2px rgba(200,169,110,0.07);
 }
 
-/* Text glow */
+/* ─── Card hover lift ────────────────────────────────── */
+.card-lift {
+  transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s cubic-bezier(0.16,1,0.3,1);
+}
+.card-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 16px 36px -6px rgba(106,15,15,0.14), 0 4px 14px -3px rgba(200,169,110,0.08);
+}
+
+/* ─── Slide-up overlay ───────────────────────────────── */
+.slide-up-overlay {
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+.group:hover .slide-up-overlay {
+  transform: translateY(0);
+}
+
+/* ─── Section divider ────────────────────────────────── */
+.section-divider {
+  width: 48px;
+  height: 2px;
+  background: linear-gradient(90deg, #6A0F0F, #C8A96E);
+  border-radius: 1px;
+}
+
+/* ─── Text glow ──────────────────────────────────────── */
 .text-glow {
-  text-shadow: 0 0 10px rgba(184, 134, 11, 0.2);
+  text-shadow: 0 0 20px rgba(200,169,110,0.25);
+}
+
+/* ─── Underline effect ───────────────────────────────── */
+.nav-link {
+  position: relative;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background: #C8A96E;
+  transition: width 0.3s ease;
+}
+.nav-link:hover::after,
+.nav-link.active::after {
+  width: 100%;
+}
+
+/* ─── WhatsApp Float ─────────────────────────────────── */
+.whatsapp-float {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  animation: wa-pulse 2.5s ease-in-out infinite;
+}
+@keyframes wa-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37,211,102,0.5); }
+  50%       { box-shadow: 0 0 0 10px rgba(37,211,102,0); }
+}
+
+/* ─── Price tag ──────────────────────────────────────── */
+.price-original {
+  text-decoration: line-through;
+  color: #9CA3AF;
+}
+.price-sale {
+  color: #6A0F0F;
+  font-weight: 700;
+}
+.price-save {
+  background: #FEF2F2;
+  color: #DC2626;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+
+/* ─── Star rating ────────────────────────────────────── */
+.star-filled { color: #C8A96E; fill: #C8A96E; }
+.star-empty  { color: #E5E7EB; }
+
+/* ─── Input focus ────────────────────────────────────── */
+.input-premium {
+  border: 1px solid rgba(106,15,15,0.15);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-premium:focus {
+  outline: none;
+  border-color: #C8A96E;
+  box-shadow: 0 0 0 3px rgba(200,169,110,0.12);
+}
+
+/* ─── Badge ──────────────────────────────────────────── */
+.badge-sale   { background:#DC2626; color:#fff; }
+.badge-new    { background:#16A34A; color:#fff; }
+.badge-hot    { background:#C8A96E; color:#fff; }
+
+/* ─── Skeleton shimmer ───────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0e8dc 25%, #fdf6ec 50%, #f0e8dc 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.5s infinite;
 }

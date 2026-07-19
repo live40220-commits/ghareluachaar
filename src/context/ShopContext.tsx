@@ -15,6 +15,7 @@ interface User {
   phone?: string;
   address?: string;
   city?: string;
+  isAdmin?: boolean;
 }
 
 interface ShopContextType {
@@ -156,13 +157,18 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDiscountPercentage(0);
   };
 
+  const ADMIN_EMAIL = 'admin@ghareluachaar.pk';
+  const ADMIN_PASSWORD = 'admin123';
+
   const login = (email: string, name: string) => {
+    const isAdmin = email.trim().toLowerCase() === ADMIN_EMAIL;
     const mockUser: User = {
-      name,
+      name: isAdmin ? 'Store Admin' : name,
       email,
       phone: '03001234567',
       address: 'House #42, Block C, Gulberg III',
       city: 'Lahore',
+      isAdmin,
     };
     setUser(mockUser);
     localStorage.setItem('ga_user', JSON.stringify(mockUser));
