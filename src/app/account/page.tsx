@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShopLayout } from '@/components/layout/ShopLayout';
 import { useShop } from '@/context/ShopContext';
+import ProtectedLayout from '@/components/layout/ProtectedLayout';
 import { User, ShoppingBag, Heart, MapPin, Settings, LogOut, Package, Edit2, Plus, Bell, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -42,15 +43,7 @@ export default function AccountPage() {
     }
   };
 
-  return (
-    <ShopLayout>
-      <div className="max-w-6xl mx-auto px-4 md:px-8 py-10">
-        <h1 className="font-display text-3xl font-bold text-primary mb-8">My Account</h1>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Sidebar */}
-          <aside className="space-y-1">
-            {/* Avatar */}
+  return (<ProtectedLayout><ShopLayout>
             <div className="bg-primary p-5 text-center mb-4 rounded-sm shadow-premium">
               <div className="w-16 h-16 rounded-full bg-secondary/20 flex items-center justify-center mx-auto mb-3">
                 <User className="w-8 h-8 text-secondary" />
@@ -267,6 +260,6 @@ export default function AccountPage() {
           </div>
         </div>
       </div>
-    </ShopLayout>
+    </ShopLayout></ProtectedLayout>
   );
 }

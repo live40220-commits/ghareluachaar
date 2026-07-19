@@ -5,10 +5,35 @@ import Link from 'next/link';
 import { ShopLayout } from '@/components/layout/ShopLayout';
 import { products, CATEGORIES, Product } from '@/data/products';
 import { Plus, Trash2, Eye, CheckCircle, LayoutDashboard, ShoppingBag, ShoppingCart, Users, Settings, LogOut, TrendingUp, DollarSign } from 'lucide-react';
+import { useShop } from '@/context/ShopContext';
+import { useRouter } from 'next/navigation';
+import ProtectedLayout from '@/components/layout/ProtectedLayout';
 
 export default function AdminPage() {
+  const { user, logout } = useShop();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    if (!user || !user.isAdmin) {
+      router.push('/login');
+    }
+  }, [user, router]);
+
   const [localProducts, setLocalProducts] = useState<Product[]>(products);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'add_product' | 'orders' | 'customers' | 'settings'>('dashboard');
+
+  if (!user || !user.isAdmin) {
+    return (
+      <ProtectedLayout requireAdmin>
+        <ShopLayout>
+          <div className="min-h-[70vh] flex flex-col items-center justify-center p-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+            <p className="text-sm font-bold text-primary">Verifying administrative access...</p>
+          </div>
+        </ShopLayout>
+      </ProtectedLayout>
+    );
+  }
   
   const [formData, setFormData] = useState({
     name: '',
@@ -87,7 +112,7 @@ export default function AdminPage() {
   ];
 
   return (
-    <ShopLayout>
+    <ProtectedLayout requireAdmin><ShopLayout>
       <div className="flex min-h-screen bg-bg-warm">
         
         {/* Sidebar */}
@@ -119,7 +144,13 @@ export default function AdminPage() {
             <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-sm transition-colors ${activeTab === 'settings' ? 'bg-secondary text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
               <Settings className="w-5 h-5" /> Settings
             </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-300 hover:text-red-200 hover:bg-white/10 rounded-sm transition-colors mt-2">
+            <button 
+              onClick={() => {
+                logout();
+                router.push('/login');
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-300 hover:text-red-200 hover:bg-white/10 rounded-sm transition-colors mt-2"
+            >
               <LogOut className="w-5 h-5" /> Logout
             </button>
           </div>
@@ -494,6 +525,6 @@ export default function AdminPage() {
 
         </main>
       </div>
-    </ShopLayout>
+    </ShopLayout></ProtectedLayout>
   );
 }
