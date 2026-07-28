@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { ShopLayout } from '@/components/layout/ShopLayout';
 import { products, CATEGORIES, Product } from '@/data/products';
-import { Plus, Trash2, Eye, CheckCircle, LayoutDashboard, ShoppingBag, ShoppingCart, Users, Settings, LogOut, TrendingUp, DollarSign } from 'lucide-react';
+import { Plus, Trash2, Eye, Edit, CheckCircle, LayoutDashboard, ShoppingBag, ShoppingCart, Users, Settings, LogOut, TrendingUp, DollarSign } from 'lucide-react';
 import { useShop } from '@/context/ShopContext';
 import { useRouter } from 'next/navigation';
 import ProtectedLayout from '@/components/layout/ProtectedLayout';
@@ -21,6 +21,8 @@ export default function AdminPage() {
 
   const [localProducts, setLocalProducts] = useState<Product[]>(products);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'add_product' | 'orders' | 'customers' | 'settings'>('dashboard');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editProductId, setEditProductId] = useState<string | null>(null);
 
   if (!user || !user.isAdmin) {
     return (
@@ -53,6 +55,90 @@ export default function AdminPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleStartEdit = (product: Product) => {
+    setIsEditing(true);
+    setEditProductId(product.id);
+    
+    let badge = '';
+    if (product.isNew) badge = 'New';
+    if (product.isBestSeller) badge = badge ? `${badge}, Bestseller` : 'Bestseller';
+
+    setFormData({
+      name: product.name,
+      category: product.category,
+      price: product.price.toString(),
+      originalPrice: product.originalPrice ? product.originalPrice.toString() : '',
+      image: product.image,
+      description: product.description,
+      ingredients: product.ingredients ? product.ingredients.join(', ') : '',
+      benefits: product.benefits ? product.benefits.join(', ') : '',
+      weight: product.weight ? product.weight.join(', ') : '500g, 1kg',
+      availability: product.availability,
+      badge: badge,
+    });
+    setActiveTab('add_product');
+  };
+
+  const handleStartAdd = () => {
+    setIsEditing(false);
+    setEditProductId(null);
+    setFormData({
+      name: '',
+      category: 'pickles',
+      price: '',
+      originalPrice: '',
+      image: '/images/products/new_product_0.jpg',
+      description: '',
+      ingredients: '',
+      benefits: '',
+      weight: '500g, 1kg',
+      availability: 'in-stock',
+      badge: '',
+    });
+    setActiveTab('add_product');
+  };
+
+  const handleSaveProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (isEditing && editProductId) {
+      const updatedProductData = {
+        name: formData.name,
+        slug: formData.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+        category: formData.category,
+        price: Number(formData.price),
+        originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
+        image: formData.image || '/images/products/new_product_0.jpg',
+        description: formData.description,
+        ingredients: formData.ingredients.split(',').map(i => i.trim()).filter(Boolean),
+        benefits: formData.benefits.split(',').map(b => b.trim()).filter(Boolean),
+        weight: formData.weight.split(',').map(w => w.trim()).filter(Boolean),
+        availability: formData.availability,
+        isNew: formData.badge.toLowerCase().includes('new'),
+        isBestSeller: formData.badge.toLowerCase().includes('best'),
+        discount: formData.originalPrice ? Math.round(((Number(formData.originalPrice) - Number(formData.price)) / Number(formData.originalPrice)) * 100) : undefined
+      };
+
+      setLocalProducts(prev => prev.map(p => p.id === editProductId ? { ...p, ...updatedProductData } : p));
+      
+      const index = products.findIndex(p => p.id === editProductId);
+      if (index > -1) {
+        products[index] = { ...products[index], ...updatedProductData };
+      }
+
+      setNotification(`Product "${formData.name}" updated successfully!`);
+      setIsEditing(false);
+      setEditProductId(null);
+      setActiveTab('products');
+      setFormData({
+        name: '', category: 'pickles', price: '', originalPrice: '', image: '/images/products/new_product_0.jpg', description: '', ingredients: '', benefits: '', weight: '500g, 1kg', availability: 'in-stock', badge: '',
+      });
+      setTimeout(() => setNotification(null), 4000);
+    } else {
+      handleAddProduct(e);
+    }
   };
 
   const handleAddProduct = (e: React.FormEvent) => {
@@ -129,7 +215,7 @@ export default function AdminPage() {
             <button onClick={() => setActiveTab('products')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-sm transition-colors ${activeTab === 'products' ? 'bg-secondary text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
               <ShoppingBag className="w-5 h-5" /> All Products
             </button>
-            <button onClick={() => setActiveTab('add_product')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-sm transition-colors ${activeTab === 'add_product' ? 'bg-secondary text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
+            <button onClick={handleStartAdd} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-sm transition-colors ${(activeTab === 'add_product' && !isEditing) ? 'bg-secondary text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
               <Plus className="w-5 h-5" /> Add New Product
             </button>
             <button onClick={() => setActiveTab('orders')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-sm transition-colors ${activeTab === 'orders' ? 'bg-secondary text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
@@ -236,7 +322,7 @@ export default function AdminPage() {
                   <p className="text-text-muted text-sm mt-1">Manage your {localProducts.length} specialty items.</p>
                 </div>
                 <button 
-                  onClick={() => setActiveTab('add_product')}
+                  onClick={handleStartAdd}
                   className="flex items-center gap-2 px-6 py-3 text-xs font-bold uppercase tracking-wider bg-primary text-white hover:bg-secondary transition-colors"
                 >
                   <Plus className="w-4 h-4" /> Add Product
@@ -284,7 +370,10 @@ export default function AdminPage() {
                             <Link href={`/shop/${p.category}/${p.slug}`} className="inline-flex p-2 border border-primary/20 text-primary hover:bg-secondary hover:text-white transition-colors" title="View product">
                               <Eye className="w-4 h-4" />
                             </Link>
-                            <button onClick={() => handleDelete(p.id)} className="p-2 border border-red-200 text-red-500 hover:bg-red-500 hover:text-white transition-colors" title="Delete product">
+                            <button onClick={() => handleStartEdit(p)} className="inline-flex p-2 border border-primary/20 text-primary hover:bg-secondary hover:text-white transition-colors" title="Edit product">
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDelete(p.id)} className="inline-flex p-2 border border-red-200 text-red-500 hover:bg-red-500 hover:text-white transition-colors" title="Delete product">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </td>
@@ -297,16 +386,20 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* Tab 3: Add Product Form */}
+          {/* Tab 3: Add/Edit Product Form */}
           {activeTab === 'add_product' && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <div>
-                <h1 className="font-display text-3xl font-bold text-primary">Create New Product</h1>
-                <p className="text-text-muted text-sm mt-1">Add a new authentic recipe to the catalog.</p>
+                <h1 className="font-display text-3xl font-bold text-primary">
+                  {isEditing ? `Edit Product: ${formData.name}` : 'Create New Product'}
+                </h1>
+                <p className="text-text-muted text-sm mt-1">
+                  {isEditing ? 'Modify the details of this specialty product.' : 'Add a new authentic recipe to the catalog.'}
+                </p>
               </div>
 
               <div className="bg-white border border-secondary/20 shadow-sm p-8">
-                <form onSubmit={handleAddProduct} className="space-y-6">
+                <form onSubmit={handleSaveProduct} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Product Name *</label>
@@ -354,6 +447,16 @@ export default function AdminPage() {
                       <input type="text" name="image" value={formData.image} onChange={handleInputChange} placeholder="/images/products/new_product_0.jpg"
                         className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
                     </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Ingredients (comma-separated)</label>
+                      <input type="text" name="ingredients" value={formData.ingredients} onChange={handleInputChange} placeholder="e.g. Raw Mangoes, Mustard Oil, Kalonji"
+                        className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Benefits (comma-separated)</label>
+                      <input type="text" name="benefits" value={formData.benefits} onChange={handleInputChange} placeholder="e.g. Supports digestion, Rich in antioxidants"
+                        className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
+                    </div>
                   </div>
 
                   <div>
@@ -364,9 +467,9 @@ export default function AdminPage() {
 
                   <div className="flex gap-4 pt-6 border-t border-secondary/20">
                     <button type="submit" className="px-8 py-4 bg-primary text-white font-bold text-xs uppercase tracking-[0.2em] hover:bg-secondary transition-colors">
-                      Publish Product
+                      {isEditing ? 'Save Changes' : 'Publish Product'}
                     </button>
-                    <button type="button" onClick={() => setActiveTab('products')} className="px-8 py-4 bg-white border border-primary/20 text-primary font-bold text-xs uppercase tracking-[0.2em] hover:bg-primary/5 transition-colors">
+                    <button type="button" onClick={() => { setIsEditing(false); setEditProductId(null); setActiveTab('products'); }} className="px-8 py-4 bg-white border border-primary/20 text-primary font-bold text-xs uppercase tracking-[0.2em] hover:bg-primary/5 transition-colors">
                       Cancel
                     </button>
                   </div>
