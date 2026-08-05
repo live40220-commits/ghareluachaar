@@ -22,11 +22,11 @@ export const metadata: Metadata = {
     default: 'Gharelu Achaar | Pure Homemade Taste, Delivered Fresh',
     template: '%s | Gharelu Achaar',
   },
-  description: 'Gharelu Achaar brings you 100% pure homemade pickles (achaar), murabba, chutneys, traditional spices (masalay), pure Sidr honey, sauces, and natural syrups. Prepared with love and mustard oil in Pakistan.',
-  keywords: ['pickle', 'achaar', 'murabba', 'homemade pickles', 'mango pickle', 'amla murabba', 'pure honey', 'sidr honey', 'pakistani food', 'gharelu achaar', 'soghat-e-khas'],
+  description: 'Gharelu Achaar brings you 100% pure homemade pickles (achaar) and curated pickle bundles. Prepared with love and mustard oil in Pakistan.',
+  keywords: ['pickle', 'achaar', 'homemade pickles', 'mango pickle', 'garlic pickle', 'mixed pickle', 'pakistani food', 'gharelu achaar', 'soghat-e-khas'],
   openGraph: {
     title: 'Gharelu Achaar | Pure Homemade Taste, Delivered Fresh',
-    description: '100% pure homemade pickles, murabba, and traditional food products delivered fresh across Pakistan.',
+    description: '100% pure homemade pickles (achaar) and curated pickle bundles delivered fresh across Pakistan.',
     url: 'https://ghareluachaar.vercel.app',
     siteName: 'Gharelu Achaar',
     images: [
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
         url: '/images/hero/2.webp',
         width: 1080,
         height: 1080,
-        alt: 'Gharelu Achaar Premium Homemade Products',
+        alt: 'Gharelu Achaar Premium Homemade Pickles',
       },
     ],
     locale: 'en_PK',
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Gharelu Achaar | Pure Homemade Taste, Delivered Fresh',
-    description: '100% pure homemade pickles, murabbas, and traditional Pakistani food products.',
+    description: '100% pure homemade pickles (achaar) and curated pickle bundles delivered fresh across Pakistan.',
     images: ['/images/hero/2.webp'],
   },
   robots: {

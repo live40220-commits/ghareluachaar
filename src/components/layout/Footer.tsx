@@ -186,23 +186,8 @@ export const Footer: React.FC = () => {
               </Link>
             </li>
             <li>
-              <Link href="/shop?category=murabba" className="hover:text-secondary hover:underline transition-colors">
-                Murabba Preserves
-              </Link>
-            </li>
-            <li>
-              <Link href="/shop?category=chutney" className="hover:text-secondary hover:underline transition-colors">
-                Tangy Chutneys
-              </Link>
-            </li>
-            <li>
-              <Link href="/shop?category=honey" className="hover:text-secondary hover:underline transition-colors">
-                Pure Sidr Honey
-              </Link>
-            </li>
-            <li>
-              <Link href="/shop?category=syrups" className="hover:text-secondary hover:underline transition-colors">
-                Traditional Syrups
+              <Link href="/shop?category=bundles" className="hover:text-secondary hover:underline transition-colors">
+                Pickle Bundles
               </Link>
             </li>
           </ul>

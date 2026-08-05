@@ -20,7 +20,7 @@ const FAQS = [
     category: 'Products & Quality',
     items: [
       { q: 'Are your products really homemade?', a: 'Absolutely! Every product is made in our family kitchen using traditional recipes and hand-ground spices. We never use artificial preservatives or shortcuts.' },
-      { q: 'How long do your products last?', a: 'Our pickles last 12–18 months when stored properly in a cool, dry place. Honey and syrups last up to 2 years. Always check the packaging for the best-before date.' },
+      { q: 'How long do your products last?', a: 'Our pickles last 12–18 months when stored properly in a cool, dry place. Always check the packaging for the best-before date.' },
       { q: 'Are your products safe for children?', a: 'Most of our products are made with natural ingredients. However, some items contain mustard oil and strong spices. We recommend mild varieties for children.' },
       { q: 'Do you use any artificial colors or flavors?', a: 'Never. We are strictly natural and preservative-free. All colors come from natural spices like turmeric and red chilies.' },
       { q: 'What oil do you use in your pickles?', a: 'We exclusively use cold-pressed Mustard Oil (Kachi Ghani Sarson Ka Tel) — the traditional and most flavorful choice for authentic Pakistani achaar.' },

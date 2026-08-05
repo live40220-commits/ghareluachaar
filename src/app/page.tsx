@@ -19,29 +19,20 @@ const HERO_SLIDES = [
     ctaSecondary: { label: 'View All Pickles', href: '/shop?category=pickles' },
   },
   {
-    image: '/images/hero/hero_banner_2.png',
-    alt: 'Premium murabbas and traditional Pakistani delicacies',
-    title: 'Premium Murabbas',
-    titleHighlight: 'Direct from Home Kitchens',
-    subtitle: 'Pure fruit preserves made with generations-old Unani recipes.',
-    cta: { label: 'Shop Murabbas', href: '/shop?category=murabba' },
+    image: '/images/products/new_product_1.webp',
+    alt: 'Desi Lasoora and Garlic Pickles - Heritage recipes of Punjab',
+    title: 'Heritage Recipes of',
+    titleHighlight: 'Desi Pickles',
+    subtitle: 'Soft, flavorful, and perfectly cured in pure cold-pressed mustard oil.',
+    cta: { label: 'Explore Pickles', href: '/shop?category=pickles' },
     ctaSecondary: { label: 'Best Sellers', href: '/shop?filter=best-sellers' },
   },
   {
     image: '/images/products/new_product_0.jpg',
-    alt: 'Freshly ground premium organic spices and masala',
-    title: 'Pure Organic',
-    titleHighlight: 'Aromatic Spices',
-    subtitle: 'Freshly ground without any artificial colors or preservatives.',
-    cta: { label: 'Shop Masalay', href: '/shop?category=masalay' },
-    ctaSecondary: { label: 'New Arrivals', href: '/shop?filter=new-arrivals' },
-  },
-  {
-    image: '/images/products/new_product_1.webp',
-    alt: 'Special Bundles and Hampers for Family',
+    alt: 'Special Pickle Bundles and Hampers for Family',
     title: 'Perfect Gifts',
     titleHighlight: 'For Your Loved Ones',
-    subtitle: 'Share the taste of home with our beautifully curated assortments.',
+    subtitle: 'Share the taste of home with our beautifully curated pickle assortments.',
     cta: { label: 'Shop Bundles', href: '/shop?category=bundles' },
     ctaSecondary: { label: 'All Products', href: '/shop' },
   },
@@ -49,12 +40,6 @@ const HERO_SLIDES = [
 
 const CATEGORY_IMAGES: Record<string, string> = {
   pickles: '/images/products/mango_pickle.png',
-  murabba: '/images/products/apple_murabba.png',
-  chutney: '/images/products/mix_pickle.png',
-  masalay: '/images/products/pure_honey.png',
-  honey: '/images/products/pure_honey.png',
-  sauces: '/images/products/mix_pickle.png',
-  syrups: '/images/products/pure_honey.png',
   bundles: '/images/products/mango_pickle.png',
 };
 
@@ -252,7 +237,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
             { image: '/images/hero/hero_banner_1.png', href: '/shop?category=pickles', label: 'SHOP PICKLES', title: 'Authentic Achaar' },
-            { image: '/images/hero/hero_banner_2.png', href: '/shop?category=murabba', label: 'SHOP MURABBAS', title: 'Traditional Murabba' },
+            { image: '/images/hero/hero_banner_2.png', href: '/shop?category=bundles', label: 'SHOP BUNDLES', title: 'Shahi Pickle Bundles' },
           ].map(item => (
             <Link
               key={item.image}

@@ -11,10 +11,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 const NAV_CATEGORIES = [
   { label: 'New Arrivals', href: '/shop?filter=new-arrivals' },
   { label: 'Pickles', href: '/shop?category=pickles' },
-  { label: 'Murabbas', href: '/shop?category=murabba' },
-  { label: 'Chutney', href: '/shop?category=chutney' },
-  { label: 'Super Foods', href: '/shop?category=masalay' },
-  { label: 'Syrups', href: '/shop?category=syrups' },
   { label: 'Best Selling', href: '/shop?filter=best-sellers' },
   { label: 'Bundles', href: '/shop?category=bundles' },
   { label: 'All Products', href: '/shop' },
@@ -179,7 +175,7 @@ export const Header: React.FC = () => {
                   <input
                     ref={searchRef}
                     type="text"
-                    placeholder="Search pickles, honey, murabba, chutney..."
+                    placeholder="Search pickles, bundles..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     className="flex-1 text-base text-text-dark focus:outline-none bg-transparent placeholder-text-dark/30"
