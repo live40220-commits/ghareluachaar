@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ShopLayout } from '@/components/layout/ShopLayout';
 import { useShop } from '@/context/ShopContext';
-import { products } from '@/data/products';
+import { products, getProductPrice } from '@/data/products';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Tag, ShieldCheck, Truck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -67,7 +67,7 @@ export default function CartPage() {
                       <p className="text-[9px] text-secondary font-black uppercase tracking-widest capitalize mb-0.5">{item.product.category}</p>
                       <Link href={`/product/${item.product.slug}`} className="font-semibold text-primary hover:text-secondary transition-colors text-sm line-clamp-2">{item.product.name}</Link>
                       <p className="text-[10px] text-text-muted mt-0.5">Weight: {item.selectedWeight}</p>
-                      <p className="text-sm font-bold text-primary mt-1">Rs. {item.product.price.toLocaleString()}</p>
+                      <p className="text-sm font-bold text-primary mt-1">Rs. {getProductPrice(item.product, item.selectedWeight).toLocaleString()}</p>
                     </div>
                     <div className="flex flex-col items-end gap-3 shrink-0">
                       <button onClick={() => removeFromCart(item.product.id, item.selectedWeight)} className="text-text-muted hover:text-red-500 transition-colors">
@@ -82,7 +82,7 @@ export default function CartPage() {
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
-                      <p className="text-sm font-bold text-primary">Rs. {(item.product.price * item.quantity).toLocaleString()}</p>
+                      <p className="text-sm font-bold text-primary">Rs. {(getProductPrice(item.product, item.selectedWeight) * item.quantity).toLocaleString()}</p>
                     </div>
                   </motion.div>
                 ))}

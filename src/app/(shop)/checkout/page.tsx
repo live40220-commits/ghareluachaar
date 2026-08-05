@@ -7,6 +7,7 @@ import { ShopLayout } from '@/components/layout/ShopLayout';
 import { useShop } from '@/context/ShopContext';
 import { ChevronRight, ShieldCheck, Truck, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getProductPrice } from '@/data/products';
 
 const CITIES = ['Lahore','Karachi','Islamabad','Rawalpindi','Faisalabad','Multan','Peshawar','Quetta','Sialkot','Gujranwala','Hyderabad','Abbottabad'];
 
@@ -156,7 +157,7 @@ export default function CheckoutPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-primary font-semibold line-clamp-1">{item.product.name}</p>
                       </div>
-                      <p className="text-xs font-bold text-primary shrink-0">PKR {(item.product.price * item.quantity).toLocaleString()}</p>
+                      <p className="text-xs font-bold text-primary shrink-0">PKR {(getProductPrice(item.product, item.selectedWeight) * item.quantity).toLocaleString()}</p>
                     </div>
                   ))}
                 </div>

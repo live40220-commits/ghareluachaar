@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Product } from '@/data/products';
+import { Product, getProductPriceRange, getProductOriginalPriceRange } from '@/data/products';
 import { useShop } from '@/context/ShopContext';
 import { Heart, Eye, ShoppingCart, Star, Check } from 'lucide-react';
 import Image from 'next/image';
@@ -130,13 +130,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, priority = fa
         {/* Pricing */}
         <div className="flex items-end justify-between mt-1 pt-2 border-t border-secondary/8">
           <div>
-            {product.originalPrice && (
-              <span className="price-original text-[10px] block">Rs. {product.originalPrice.toLocaleString()}</span>
+            {getProductOriginalPriceRange(product) && (
+              <span className="price-original text-[10px] block line-through">{getProductOriginalPriceRange(product)}</span>
             )}
-            <span className="price-sale text-sm">Rs. {product.price.toLocaleString()}</span>
-            {savings > 0 && (
-              <span className="price-save block mt-0.5">Save Rs. {savings.toLocaleString()}</span>
-            )}
+            <span className="price-sale text-sm">{getProductPriceRange(product)}</span>
+            {(() => {
+              const orig = getProductOriginalPriceRange(product);
+              if (orig) {
+                const origMin = product.weightPrices
+                  ? Math.min(...Object.values(product.weightPrices).map(wp => wp.originalPrice ?? wp.price))
+                  : (product.originalPrice ?? product.price);
+                const priceMin = product.weightPrices
+                  ? Math.min(...Object.values(product.weightPrices).map(wp => wp.price))
+                  : product.price;
+                const saved = origMin - priceMin;
+                if (saved > 0) return <span className="price-save block mt-0.5">Save Rs. {saved.toLocaleString()}+</span>;
+              }
+              return null;
+            })()}
           </div>
           <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-sm ${
             product.availability === 'in-stock' ? 'bg-green-50 text-green-700' :

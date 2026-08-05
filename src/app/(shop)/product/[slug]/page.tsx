@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { products } from '@/data/products';
+import { products, getProductPrice, getProductOriginalPrice } from '@/data/products';
 import { ShopLayout } from '@/components/layout/ShopLayout';
 import { useShop } from '@/context/ShopContext';
 import { ProductCard } from '@/components/product/ProductCard';
@@ -83,12 +83,14 @@ export default function ProductPage({ params }: Props) {
 
             {/* Price */}
             <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-bold text-primary">PKR {product.price.toLocaleString()}</span>
-              {product.originalPrice && (
-                <span className="text-lg text-primary/40 line-through">PKR {product.originalPrice.toLocaleString()}</span>
+              <span className="text-3xl font-bold text-primary">PKR {getProductPrice(product, selectedWeight).toLocaleString()}</span>
+              {getProductOriginalPrice(product, selectedWeight) && (
+                <span className="text-lg text-primary/40 line-through">PKR {getProductOriginalPrice(product, selectedWeight)!.toLocaleString()}</span>
               )}
-              {product.discount && (
-                <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-0.5">Save {product.discount}%</span>
+              {getProductOriginalPrice(product, selectedWeight) && getProductOriginalPrice(product, selectedWeight)! > getProductPrice(product, selectedWeight) && (
+                <span className="text-sm font-bold text-green-600 bg-green-50 px-2 py-0.5">
+                  Save {Math.round((1 - getProductPrice(product, selectedWeight) / getProductOriginalPrice(product, selectedWeight)!) * 100)}%
+                </span>
               )}
             </div>
 

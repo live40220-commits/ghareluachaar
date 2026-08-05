@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, products } from '@/data/products';
+import { Product, products, getProductPrice } from '@/data/products';
 
 export interface CartItem {
   product: Product;
@@ -184,7 +184,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Calculations
-  const cartSubtotal = cart.reduce((total, item) => total + item.product.price * item.quantity, 0);
+  const cartSubtotal = cart.reduce((total, item) => total + getProductPrice(item.product, item.selectedWeight) * item.quantity, 0);
   const discountAmount = Math.round(cartSubtotal * (discountPercentage / 100));
   const shippingFee = cartSubtotal >= freeShippingThreshold || cartSubtotal === 0 ? 0 : standardShippingFee;
   const cartTotal = cartSubtotal - discountAmount + shippingFee;

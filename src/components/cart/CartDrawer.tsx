@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag, Plus, Minus, Trash2, Tag, Percent } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { getProductPrice } from '@/data/products';
 
 export const CartDrawer: React.FC = () => {
   const {
@@ -140,7 +141,7 @@ export const CartDrawer: React.FC = () => {
                       Weight: {item.selectedWeight}
                     </p>
                     <p className="text-xs font-semibold text-secondary mt-1">
-                      Rs. {item.product.price}
+                      Rs. {getProductPrice(item.product, item.selectedWeight).toLocaleString()}
                     </p>
 
                     {/* Quantity Selector */}
@@ -172,7 +173,7 @@ export const CartDrawer: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <span className="text-sm font-semibold text-primary">
-                      Rs. {item.product.price * item.quantity}
+                      Rs. {(getProductPrice(item.product, item.selectedWeight) * item.quantity).toLocaleString()}
                     </span>
                   </div>
                 </div>

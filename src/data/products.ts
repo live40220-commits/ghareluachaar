@@ -1,3 +1,8 @@
+export interface WeightPrice {
+  price: number;
+  originalPrice?: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -17,6 +22,50 @@ export interface Product {
   isBestSeller?: boolean;
   isFeatured?: boolean;
   discount?: number;
+  weightPrices?: Record<string, WeightPrice>;
+}
+
+export function getProductPrice(product: Product, weight: string): number {
+  if (product.weightPrices && product.weightPrices[weight]) {
+    return product.weightPrices[weight].price;
+  }
+  return product.price;
+}
+
+export function getProductOriginalPrice(product: Product, weight: string): number | undefined {
+  if (product.weightPrices && product.weightPrices[weight]) {
+    return product.weightPrices[weight].originalPrice;
+  }
+  return product.originalPrice;
+}
+
+export function getProductPriceRange(product: Product): string {
+  if (product.weightPrices) {
+    const prices = Object.values(product.weightPrices).map(wp => wp.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    if (minPrice !== maxPrice) {
+      return `Rs. ${minPrice.toLocaleString()} – Rs. ${maxPrice.toLocaleString()}`;
+    }
+  }
+  return `Rs. ${product.price.toLocaleString()}`;
+}
+
+export function getProductOriginalPriceRange(product: Product): string | null {
+  if (product.weightPrices) {
+    const origPrices = Object.values(product.weightPrices)
+      .map(wp => wp.originalPrice)
+      .filter((p): p is number => typeof p === 'number');
+    if (origPrices.length > 0) {
+      const minPrice = Math.min(...origPrices);
+      const maxPrice = Math.max(...origPrices);
+      if (minPrice !== maxPrice) {
+        return `Rs. ${minPrice.toLocaleString()} – Rs. ${maxPrice.toLocaleString()}`;
+      }
+      return `Rs. ${minPrice.toLocaleString()}`;
+    }
+  }
+  return product.originalPrice ? `Rs. ${product.originalPrice.toLocaleString()}` : null;
 }
 
 export const CATEGORIES = [
@@ -44,7 +93,11 @@ export const products: Product[] = [
     isNew: false,
     isBestSeller: true,
     isFeatured: true,
-    discount: 23
+    discount: 23,
+    weightPrices: {
+      '500g': { price: 650, originalPrice: 850 },
+      '1kg':  { price: 1150, originalPrice: 1500 }
+    }
   },
   {
     id: 'p2',
@@ -64,7 +117,11 @@ export const products: Product[] = [
     isNew: true,
     isBestSeller: false,
     isFeatured: true,
-    discount: 16
+    discount: 16,
+    weightPrices: {
+      '500g': { price: 790, originalPrice: 950 },
+      '1kg':  { price: 1400, originalPrice: 1700 }
+    }
   },
   {
     id: 'p3',
@@ -84,7 +141,11 @@ export const products: Product[] = [
     isNew: false,
     isBestSeller: true,
     isFeatured: false,
-    discount: 17
+    discount: 17,
+    weightPrices: {
+      '500g': { price: 580, originalPrice: 700 },
+      '1kg':  { price: 1050, originalPrice: 1250 }
+    }
   },
   {
     id: 'p4',
@@ -104,7 +165,11 @@ export const products: Product[] = [
     isNew: true,
     isBestSeller: false,
     isFeatured: true,
-    discount: 15
+    discount: 15,
+    weightPrices: {
+      '500g': { price: 680, originalPrice: 800 },
+      '1kg':  { price: 1200, originalPrice: 1400 }
+    }
   },
   {
     id: 'p5',
@@ -124,7 +189,11 @@ export const products: Product[] = [
     isNew: false,
     isBestSeller: true,
     isFeatured: true,
-    discount: 22
+    discount: 22,
+    weightPrices: {
+      '500g': { price: 850, originalPrice: 1100 },
+      '1kg':  { price: 1500, originalPrice: 1950 }
+    }
   },
   {
     id: 'p6',
@@ -144,7 +213,11 @@ export const products: Product[] = [
     isNew: false,
     isBestSeller: false,
     isFeatured: false,
-    discount: 18
+    discount: 18,
+    weightPrices: {
+      '500g': { price: 490, originalPrice: 600 },
+      '1kg':  { price: 880, originalPrice: 1050 }
+    }
   },
   {
     id: 'p7',
@@ -164,7 +237,11 @@ export const products: Product[] = [
     isNew: true,
     isBestSeller: false,
     isFeatured: true,
-    discount: 16
+    discount: 16,
+    weightPrices: {
+      '500g': { price: 750, originalPrice: 900 },
+      '1kg':  { price: 1350, originalPrice: 1600 }
+    }
   },
   {
     id: 'p8',
@@ -184,8 +261,12 @@ export const products: Product[] = [
     isNew: false,
     isBestSeller: false,
     isFeatured: false,
-    discount: 20
-  },  // Bundles (using mango_pickle.png)
+    discount: 20,
+    weightPrices: {
+      '500g': { price: 600, originalPrice: 750 }
+    }
+  },
+  // Bundles (using mango_pickle.png)
   {
     id: 'p22',
     name: 'Gharelu Shahi Pickle Bundle',
@@ -204,6 +285,9 @@ export const products: Product[] = [
     isNew: true,
     isBestSeller: true,
     isFeatured: true,
-    discount: 22
+    discount: 22,
+    weightPrices: {
+      'Combined Pack': { price: 2499, originalPrice: 3200 }
+    }
   }
 ];
