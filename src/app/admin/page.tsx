@@ -1,633 +1,269 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ShopLayout } from '@/components/layout/ShopLayout';
-import { products, CATEGORIES, Product } from '@/data/products';
-import { Plus, Trash2, Eye, Edit, CheckCircle, LayoutDashboard, ShoppingBag, ShoppingCart, Users, Settings, LogOut, TrendingUp, DollarSign } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { products as staticProducts, CATEGORIES, Product } from '@/data/products';
 import { useShop } from '@/context/ShopContext';
 import { useRouter } from 'next/navigation';
 import ProtectedLayout from '@/components/layout/ProtectedLayout';
+import { ShopLayout } from '@/components/layout/ShopLayout';
+import { Plus, Trash2, Eye, Edit, CheckCircle, LayoutDashboard, ShoppingBag, ShoppingCart, Users, Settings, LogOut, Upload, Image as ImageIcon } from 'lucide-react';
+
+type Tab = 'dashboard' | 'products' | 'add_product' | 'slider' | 'orders' | 'customers' | 'settings';
+
+const DEFAULT_SLIDES = [
+  { image: '/images/hero/hero_banner_1.png', alt: 'Gharelu Achaar', title: 'Bring Home The', title_highlight: 'Taste of Tradition', subtitle: 'Authentic homemade achaar made with love & traditional recipes.', primary_button_label: 'Shop Now', primary_button_link: '/shop', secondary_button_label: 'View All Products', secondary_button_link: '/shop', display_order: 0, is_active: true },
+  { image: '/images/products/new_product_1.webp', alt: 'Fresh Achaar', title: 'Pure Ingredients.', title_highlight: 'Authentic Flavour.', subtitle: 'Traditional recipes prepared in small batches.', primary_button_label: 'Shop Now', primary_button_link: '/shop', secondary_button_label: 'Explore', secondary_button_link: '/shop', display_order: 1, is_active: true },
+  { image: '/images/products/new_product_0.jpg', alt: 'Homemade Achaar', title: 'Made With Love.', title_highlight: 'Just Like Home.', subtitle: 'Taste the warmth of homemade goodness.', primary_button_label: 'Shop Now', primary_button_link: '/shop', secondary_button_label: 'View Products', secondary_button_link: '/shop', display_order: 2, is_active: true },
+];
+
+const emptyForm = {
+  name: '', category: 'pickles', price: '', originalPrice: '', image: '/images/products/new_product_0.jpg',
+  description: '', ingredients: '', benefits: '', weight: '500g, 1kg', availability: 'in-stock' as Product['availability'],
+  badge: '', isFeatured: true,
+};
+
+function dbToProduct(p: any): Product {
+  return {
+    id: p.id, name: p.name, slug: p.slug, category: p.category, price: Number(p.price),
+    originalPrice: p.original_price == null ? undefined : Number(p.original_price), image: p.image || '',
+    rating: Number(p.rating || 0), reviewsCount: Number(p.reviews_count || 0), description: p.description || '',
+    ingredients: p.ingredients || [], benefits: p.benefits || [], weight: p.weight || ['500g'],
+    availability: p.availability, isNew: !!p.is_new, isBestSeller: !!p.is_best_seller, isFeatured: !!p.is_featured,
+    discount: p.discount == null ? undefined : Number(p.discount), weightPrices: p.weight_prices || undefined,
+  };
+}
 
 export default function AdminPage() {
   const { user, logout } = useShop();
   const router = useRouter();
+  const [tab, setTab] = useState<Tab>('dashboard');
+  const [items, setItems] = useState<Product[]>([]);
+  const [slides, setSlides] = useState<any[]>([]);
+  const [settings, setSettings] = useState<any>({});
+  const [form, setForm] = useState(emptyForm);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [notice, setNotice] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
-    if (!user || !user.isAdmin) {
-      router.push('/login');
-    }
+  const notify = (message: string) => {
+    setNotice(message);
+    window.setTimeout(() => setNotice(''), 4500);
+  };
+
+  useEffect(() => {
+    if (!user || !user.isAdmin) { router.push('/login'); return; }
+    loadAll();
   }, [user, router]);
 
-  const [localProducts, setLocalProducts] = useState<Product[]>(products);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'add_product' | 'orders' | 'customers' | 'settings'>('dashboard');
-  const [isEditing, setIsEditing] = useState(false);
-  const [editProductId, setEditProductId] = useState<string | null>(null);
-
-  if (!user || !user.isAdmin) {
-    return (
-      <ProtectedLayout requireAdmin>
-        <ShopLayout>
-          <div className="min-h-[70vh] flex flex-col items-center justify-center p-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
-            <p className="text-sm font-bold text-primary">Verifying administrative access...</p>
-          </div>
-        </ShopLayout>
-      </ProtectedLayout>
-    );
-  }
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    category: 'pickles',
-    price: '',
-    originalPrice: '',
-    image: '/images/products/new_product_0.jpg',
-    description: '',
-    ingredients: '',
-    benefits: '',
-    weight: '500g, 1kg',
-    availability: 'in-stock' as 'in-stock' | 'low-stock' | 'out-of-stock',
-    badge: '',
-  });
-
-  const [notification, setNotification] = useState<string | null>(null);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const loadAll = async () => {
+    setLoading(true);
+    const [p, s, st] = await Promise.all([
+      supabase.from('products').select('*').order('created_at', { ascending: false }),
+      supabase.from('slider_slides').select('*').order('display_order', { ascending: true }),
+      supabase.from('store_settings').select('*').limit(1).maybeSingle(),
+    ]);
+    if (p.error) notify(p.error.message);
+    if (s.error) notify(s.error.message);
+    setItems((p.data || []).map(dbToProduct));
+    setSlides(s.data || []);
+    setSettings(st.data || {});
+    setLoading(false);
   };
 
-  const handleStartEdit = (product: Product) => {
-    setIsEditing(true);
-    setEditProductId(product.id);
-    
-    let badge = '';
-    if (product.isNew) badge = 'New';
-    if (product.isBestSeller) badge = badge ? `${badge}, Bestseller` : 'Bestseller';
-
-    setFormData({
-      name: product.name,
-      category: product.category,
-      price: product.price.toString(),
-      originalPrice: product.originalPrice ? product.originalPrice.toString() : '',
-      image: product.image,
-      description: product.description,
-      ingredients: product.ingredients ? product.ingredients.join(', ') : '',
-      benefits: product.benefits ? product.benefits.join(', ') : '',
-      weight: product.weight ? product.weight.join(', ') : '500g, 1kg',
-      availability: product.availability,
-      badge: badge,
-    });
-    setActiveTab('add_product');
+  const uploadImage = async (file: File, bucket: 'products' | 'sliders') => {
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from(bucket).upload(path, file, { contentType: file.type, upsert: false });
+    if (error) throw error;
+    return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
   };
 
-  const handleStartAdd = () => {
-    setIsEditing(false);
-    setEditProductId(null);
-    setFormData({
-      name: '',
-      category: 'pickles',
-      price: '',
-      originalPrice: '',
-      image: '/images/products/new_product_0.jpg',
-      description: '',
-      ingredients: '',
-      benefits: '',
-      weight: '500g, 1kg',
-      availability: 'in-stock',
-      badge: '',
-    });
-    setActiveTab('add_product');
+  const startAdd = () => { setEditId(null); setForm(emptyForm); setImageFile(null); setTab('add_product'); };
+  const startEdit = (p: Product) => {
+    setEditId(p.id);
+    setForm({ name: p.name, category: p.category, price: String(p.price), originalPrice: p.originalPrice ? String(p.originalPrice) : '',
+      image: p.image, description: p.description, ingredients: p.ingredients.join(', '), benefits: p.benefits.join(', '),
+      weight: p.weight.join(', '), availability: p.availability, badge: [p.isNew ? 'New' : '', p.isBestSeller ? 'Bestseller' : ''].filter(Boolean).join(', '), isFeatured: !!p.isFeatured });
+    setImageFile(null); setTab('add_product');
   };
 
-  const handleSaveProduct = (e: React.FormEvent) => {
+  const saveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (isEditing && editProductId) {
-      const updatedProductData = {
-        name: formData.name,
-        slug: formData.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
-        category: formData.category,
-        price: Number(formData.price),
-        originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
-        image: formData.image || '/images/products/new_product_0.jpg',
-        description: formData.description,
-        ingredients: formData.ingredients.split(',').map(i => i.trim()).filter(Boolean),
-        benefits: formData.benefits.split(',').map(b => b.trim()).filter(Boolean),
-        weight: formData.weight.split(',').map(w => w.trim()).filter(Boolean),
-        availability: formData.availability,
-        isNew: formData.badge.toLowerCase().includes('new'),
-        isBestSeller: formData.badge.toLowerCase().includes('best'),
-        discount: formData.originalPrice ? Math.round(((Number(formData.originalPrice) - Number(formData.price)) / Number(formData.originalPrice)) * 100) : undefined
+    try {
+      let image = form.image;
+      if (imageFile) image = await uploadImage(imageFile, 'products');
+      const original = form.originalPrice ? Number(form.originalPrice) : null;
+      const price = Number(form.price);
+      const payload = {
+        name: form.name.trim(), slug: form.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+        category: form.category, price, original_price: original, image, description: form.description,
+        ingredients: form.ingredients.split(',').map(x => x.trim()).filter(Boolean),
+        benefits: form.benefits.split(',').map(x => x.trim()).filter(Boolean),
+        weight: form.weight.split(',').map(x => x.trim()).filter(Boolean), availability: form.availability,
+        is_new: form.badge.toLowerCase().includes('new'), is_best_seller: form.badge.toLowerCase().includes('best'),
+        is_featured: form.isFeatured, discount: original ? Math.round(((original - price) / original) * 100) : null,
       };
-
-      setLocalProducts(prev => prev.map(p => p.id === editProductId ? { ...p, ...updatedProductData } : p));
-      
-      const index = products.findIndex(p => p.id === editProductId);
-      if (index > -1) {
-        products[index] = { ...products[index], ...updatedProductData };
+      if (editId) {
+        const { error } = await supabase.from('products').update(payload).eq('id', editId);
+        if (error) throw error;
+        notify('Product updated successfully.');
+      } else {
+        const { error } = await supabase.from('products').insert({ ...payload, rating: 5, reviews_count: 0, weight_prices: {} });
+        if (error) throw error;
+        notify('Product published successfully.');
       }
-
-      setNotification(`Product "${formData.name}" updated successfully!`);
-      setIsEditing(false);
-      setEditProductId(null);
-      setActiveTab('products');
-      setFormData({
-        name: '', category: 'pickles', price: '', originalPrice: '', image: '/images/products/new_product_0.jpg', description: '', ingredients: '', benefits: '', weight: '500g, 1kg', availability: 'in-stock', badge: '',
-      });
-      setTimeout(() => setNotification(null), 4000);
-    } else {
-      handleAddProduct(e);
-    }
+      await loadAll(); setForm(emptyForm); setImageFile(null); setEditId(null); setTab('products');
+    } catch (e: any) { notify(e.message || 'Could not save product.'); }
   };
 
-  const handleAddProduct = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const newProduct: Product = {
-      id: `p-${Date.now()}`,
-      name: formData.name,
-      slug: formData.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
-      category: formData.category,
-      price: Number(formData.price),
-      originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
-      image: formData.image || '/images/products/new_product_0.jpg',
-      rating: 5.0,
-      reviewsCount: 0,
-      description: formData.description,
-      ingredients: formData.ingredients.split(',').map(i => i.trim()).filter(Boolean),
-      benefits: formData.benefits.split(',').map(b => b.trim()).filter(Boolean),
-      weight: formData.weight.split(',').map(w => w.trim()).filter(Boolean),
-      availability: formData.availability,
-      isNew: formData.badge.toLowerCase().includes('new'),
-      isBestSeller: formData.badge.toLowerCase().includes('best'),
-      isFeatured: true,
-      discount: formData.originalPrice ? Math.round(((Number(formData.originalPrice) - Number(formData.price)) / Number(formData.originalPrice)) * 100) : undefined
-    };
-
-    setLocalProducts(prev => [newProduct, ...prev]);
-    products.unshift(newProduct);
-
-    setNotification(`Product "${newProduct.name}" published successfully!`);
-    setActiveTab('products');
-    setFormData({
-      name: '', category: 'pickles', price: '', originalPrice: '', image: '/images/products/new_product_0.jpg', description: '', ingredients: '', benefits: '', weight: '500g, 1kg', availability: 'in-stock', badge: '',
-    });
-
-    setTimeout(() => setNotification(null), 4000);
+  const deleteProduct = async (id: string) => {
+    if (!confirm('Delete this product permanently?')) return;
+    const { error } = await supabase.from('products').delete().eq('id', id);
+    if (error) notify(error.message); else { setItems(x => x.filter(p => p.id !== id)); notify('Product deleted.'); }
   };
 
-  const handleDelete = (id: string) => {
-    setLocalProducts(prev => prev.filter(p => p.id !== id));
-    const index = products.findIndex(p => p.id === id);
-    if (index > -1) products.splice(index, 1);
+  const importExisting = async () => {
+    try {
+      if (!confirm('Import the current products and homepage sliders into Supabase? This is intended as a one-time setup.')) return;
+      const productRows = staticProducts.map(p => ({
+        id: p.id, name: p.name, slug: p.slug, category: p.category, price: p.price, original_price: p.originalPrice ?? null,
+        image: p.image, rating: p.rating, reviews_count: p.reviewsCount, description: p.description, ingredients: p.ingredients,
+        benefits: p.benefits, weight: p.weight, availability: p.availability, is_new: !!p.isNew, is_best_seller: !!p.isBestSeller,
+        is_featured: !!p.isFeatured, discount: p.discount ?? null, weight_prices: p.weightPrices || {},
+      }));
+      const { error: pe } = await supabase.from('products').upsert(productRows, { onConflict: 'id' });
+      if (pe) throw pe;
+      const { error: se } = await supabase.from('slider_slides').upsert(DEFAULT_SLIDES, { onConflict: 'id' });
+      if (se) {
+        // Slides have generated IDs, so insert if the table is empty.
+        const { count } = await supabase.from('slider_slides').select('id', { count: 'exact', head: true });
+        if (!count) { const { error } = await supabase.from('slider_slides').insert(DEFAULT_SLIDES); if (error) throw error; }
+      }
+      notify('Existing catalog imported.'); await loadAll();
+    } catch (e: any) { notify(e.message || 'Import failed.'); }
   };
 
-  // Mock Data for new tabs
-  const mockOrders = [
-    { id: 'ORD-001', customer: 'Ahmed Khan', date: 'Oct 24, 2026', total: 2450, status: 'Processing' },
-    { id: 'ORD-002', customer: 'Sara Ali', date: 'Oct 24, 2026', total: 1100, status: 'Shipped' },
-    { id: 'ORD-003', customer: 'Usman Tariq', date: 'Oct 23, 2026', total: 3500, status: 'Delivered' },
-    { id: 'ORD-004', customer: 'Fatima Bilal', date: 'Oct 22, 2026', total: 950, status: 'Delivered' },
-  ];
+  const addSlide = async () => {
+    const { data, error } = await supabase.from('slider_slides').insert({ ...DEFAULT_SLIDES[0], display_order: slides.length }).select().single();
+    if (error) notify(error.message); else setSlides(x => [...x, data]);
+  };
 
-  const mockCustomers = [
-    { id: 'CUST-1', name: 'Ahmed Khan', email: 'ahmed.k@example.com', orders: 3, totalSpent: 7500 },
-    { id: 'CUST-2', name: 'Sara Ali', email: 'sara.ali@example.com', orders: 1, totalSpent: 1100 },
-    { id: 'CUST-3', name: 'Usman Tariq', email: 'usman.t@example.com', orders: 5, totalSpent: 15400 },
-  ];
+  const updateSlide = async (slide: any, file?: File) => {
+    try {
+      let image = slide.image;
+      if (file) image = await uploadImage(file, 'sliders');
+      const { data, error } = await supabase.from('slider_slides').update({ ...slide, image }).eq('id', slide.id).select().single();
+      if (error) throw error;
+      setSlides(x => x.map(s => s.id === data.id ? data : s)); notify('Slider saved.');
+    } catch (e: any) { notify(e.message); }
+  };
 
-  return (
-    <ProtectedLayout requireAdmin><ShopLayout>
-      <div className="flex min-h-screen bg-bg-warm">
-        
-        {/* Sidebar */}
-        <aside className="w-64 bg-primary text-white hidden md:flex flex-col">
-          <div className="p-6 border-b border-white/10">
-            <h2 className="font-display text-2xl font-bold tracking-wide">Studio Admin</h2>
-            <p className="text-[10px] uppercase tracking-widest text-secondary mt-1">Gharelu Achaar</p>
-          </div>
-          
-          <nav className="flex-1 py-6 space-y-2 px-4">
-            <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-sm transition-colors ${activeTab === 'dashboard' ? 'bg-secondary text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
-              <LayoutDashboard className="w-5 h-5" /> Dashboard
-            </button>
-            <button onClick={() => setActiveTab('products')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-sm transition-colors ${activeTab === 'products' ? 'bg-secondary text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
-              <ShoppingBag className="w-5 h-5" /> All Products
-            </button>
-            <button onClick={handleStartAdd} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-sm transition-colors ${(activeTab === 'add_product' && !isEditing) ? 'bg-secondary text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
-              <Plus className="w-5 h-5" /> Add New Product
-            </button>
-            <button onClick={() => setActiveTab('orders')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-sm transition-colors ${activeTab === 'orders' ? 'bg-secondary text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
-              <ShoppingCart className="w-5 h-5" /> Orders
-            </button>
-            <button onClick={() => setActiveTab('customers')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-sm transition-colors ${activeTab === 'customers' ? 'bg-secondary text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
-              <Users className="w-5 h-5" /> Customers
-            </button>
-          </nav>
-          
-          <div className="p-4 border-t border-white/10">
-            <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-sm transition-colors ${activeTab === 'settings' ? 'bg-secondary text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
-              <Settings className="w-5 h-5" /> Settings
-            </button>
-            <button 
-              onClick={() => {
-                logout();
-                router.push('/login');
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-300 hover:text-red-200 hover:bg-white/10 rounded-sm transition-colors mt-2"
-            >
-              <LogOut className="w-5 h-5" /> Logout
-            </button>
-          </div>
-        </aside>
+  const deleteSlide = async (id: string) => {
+    if (!confirm('Delete this slider?')) return;
+    const { error } = await supabase.from('slider_slides').delete().eq('id', id);
+    if (error) notify(error.message); else setSlides(x => x.filter(s => s.id !== id));
+  };
 
-        {/* Main Content */}
-        <main className="flex-1 p-6 md:p-10 overflow-y-auto">
-          
-          {notification && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 text-xs font-bold rounded-sm mb-6 flex items-center gap-2 shadow-sm">
-              <CheckCircle className="w-4 h-4" /> {notification}
-            </div>
-          )}
+  const saveSettings = async () => {
+    try {
+      const payload = {
+        store_name: settings.store_name || 'Gharelu Achaar', support_email: settings.support_email || '',
+        whatsapp: settings.whatsapp || '', phone: settings.phone || '', address: settings.address || '',
+        business_hours: settings.business_hours || '', free_shipping_threshold: Number(settings.free_shipping_threshold || 2999),
+        shipping_fee: Number(settings.shipping_fee || 250), facebook_url: settings.facebook_url || '',
+        instagram_url: settings.instagram_url || '', tiktok_url: settings.tiktok_url || '',
+      };
+      if (settings.id) {
+        const { data, error } = await supabase.from('store_settings').update(payload).eq('id', settings.id).select().single();
+        if (error) throw error; setSettings(data);
+      } else {
+        const { data, error } = await supabase.from('store_settings').insert(payload).select().single();
+        if (error) throw error; setSettings(data);
+      }
+      notify('Store settings saved.');
+    } catch (e: any) { notify(e.message); }
+  };
 
-          {/* Tab 1: Dashboard Overview */}
-          {activeTab === 'dashboard' && (
-            <div className="space-y-8 animate-in fade-in duration-300">
-              <div>
-                <h1 className="font-display text-3xl font-bold text-primary">Dashboard Overview</h1>
-                <p className="text-text-muted text-sm mt-1">Welcome back! Here's what's happening with your store today.</p>
-              </div>
+  if (!user || !user.isAdmin) return <ProtectedLayout requireAdmin><ShopLayout><div className="min-h-[70vh] flex items-center justify-center">Checking admin access...</div></ShopLayout></ProtectedLayout>;
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {[
-                  { title: 'Total Sales', value: 'Rs. 124,500', icon: <DollarSign className="w-6 h-6 text-secondary" />, trend: '+12% from last month' },
-                  { title: 'Total Orders', value: '84', icon: <ShoppingCart className="w-6 h-6 text-secondary" />, trend: '+5% from last month' },
-                  { title: 'Active Products', value: localProducts.length.toString(), icon: <ShoppingBag className="w-6 h-6 text-secondary" />, trend: '2 added this week' },
-                  { title: 'Total Customers', value: '1,240', icon: <Users className="w-6 h-6 text-secondary" />, trend: '+18 new customers' },
-                ].map((stat, i) => (
-                  <div key={i} className="bg-white p-6 border border-secondary/20 shadow-sm rounded-sm">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">{stat.title}</p>
-                        <p className="text-2xl font-bold text-primary mt-2">{stat.value}</p>
-                      </div>
-                      <div className="bg-bg-warm p-2 rounded-full border border-secondary/10">{stat.icon}</div>
-                    </div>
-                    <p className="text-[10px] text-green-600 font-semibold mt-4 flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3" /> {stat.trend}
-                    </p>
-                  </div>
-                ))}
-              </div>
+  const nav = [
+    ['dashboard','Dashboard',LayoutDashboard], ['products','Products',ShoppingBag], ['add_product','Add Product',Plus],
+    ['slider','Homepage Slider',ImageIcon], ['orders','Orders',ShoppingCart], ['customers','Customers',Users], ['settings','Settings',Settings],
+  ] as const;
 
-              <div className="bg-white border border-secondary/20 p-6 shadow-sm">
-                <h3 className="font-display font-bold text-xl text-primary mb-4">Recent Orders</h3>
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-secondary/10 bg-bg-warm text-[10px] font-black uppercase tracking-wider text-primary">
-                      <th className="p-4">Order ID</th>
-                      <th className="p-4">Customer</th>
-                      <th className="p-4">Date</th>
-                      <th className="p-4">Total</th>
-                      <th className="p-4">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-secondary/5 text-xs">
-                    {mockOrders.slice(0,3).map(order => (
-                      <tr key={order.id} className="hover:bg-bg-warm/30 transition-colors">
-                        <td className="p-4 font-bold text-primary">{order.id}</td>
-                        <td className="p-4 text-text-dark">{order.customer}</td>
-                        <td className="p-4 text-text-muted">{order.date}</td>
-                        <td className="p-4 font-bold text-text-dark">Rs. {order.total.toLocaleString()}</td>
-                        <td className="p-4">
-                          <span className={`px-2 py-1 text-[9px] font-black uppercase rounded-sm ${
-                            order.status === 'Delivered' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-                          }`}>{order.status}</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+  return <ProtectedLayout requireAdmin><ShopLayout>
+    <div className="flex min-h-screen bg-bg-warm">
+      <aside className="w-64 bg-primary text-white hidden md:flex flex-col">
+        <div className="p-6 border-b border-white/10"><h2 className="font-display text-2xl font-bold">Studio Admin</h2><p className="text-[10px] uppercase tracking-widest text-secondary mt-1">Gharelu Achaar</p></div>
+        <nav className="flex-1 p-4 space-y-1">{nav.map(([id,label,Icon]) =>
+          <button key={id} onClick={() => id === 'add_product' ? startAdd() : setTab(id as Tab)} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-sm ${tab === id ? 'bg-secondary text-white' : 'text-white/70 hover:bg-white/10'}`}><Icon className="w-5 h-5"/>{label}</button>
+        )}</nav>
+        <div className="p-4 border-t border-white/10"><button onClick={async()=>{await logout();router.push('/login')}} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-200"><LogOut className="w-5 h-5"/>Logout</button></div>
+      </aside>
 
-          {/* Tab 2: Products List */}
-          {activeTab === 'products' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h1 className="font-display text-3xl font-bold text-primary">Products Catalog</h1>
-                  <p className="text-text-muted text-sm mt-1">Manage your {localProducts.length} specialty items.</p>
-                </div>
-                <button 
-                  onClick={handleStartAdd}
-                  className="flex items-center gap-2 px-6 py-3 text-xs font-bold uppercase tracking-wider bg-primary text-white hover:bg-secondary transition-colors"
-                >
-                  <Plus className="w-4 h-4" /> Add Product
-                </button>
-              </div>
+      <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+        {notice && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 text-xs font-bold rounded-sm mb-6 flex items-center gap-2"><CheckCircle className="w-4 h-4"/>{notice}</div>}
 
-              <div className="bg-white border border-secondary/20 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-secondary/10 bg-bg-warm text-[10px] font-black uppercase tracking-wider text-primary">
-                        <th className="p-4">Product Info</th>
-                        <th className="p-4">Category</th>
-                        <th className="p-4">Price (PKR)</th>
-                        <th className="p-4">Stock Status</th>
-                        <th className="p-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-secondary/5 text-xs text-text-dark">
-                      {localProducts.map(p => (
-                        <tr key={p.id} className="hover:bg-bg-warm/30 transition-colors">
-                          <td className="p-4 flex items-center gap-4 font-semibold">
-                            <div className="relative w-12 h-12 border border-secondary/20 bg-bg-warm shrink-0 overflow-hidden shadow-sm">
-                              <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
-                            </div>
-                            <div>
-                              <p className="text-primary font-bold text-sm">{p.name}</p>
-                              <p className="text-[10px] text-text-muted mt-0.5">Slug: {p.slug}</p>
-                            </div>
-                          </td>
-                          <td className="p-4 capitalize font-semibold text-secondary">{p.category}</td>
-                          <td className="p-4 font-bold text-sm">
-                            Rs. {p.price.toLocaleString()}
-                            {p.originalPrice && <span className="text-text-muted line-through ml-2 text-[10px]">Rs. {p.originalPrice.toLocaleString()}</span>}
-                          </td>
-                          <td className="p-4">
-                            <span className={`px-2 py-1 text-[9px] font-black uppercase rounded-sm ${
-                              p.availability === 'in-stock' ? 'bg-green-50 text-green-700' :
-                              p.availability === 'low-stock' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
-                            }`}>
-                              {p.availability}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right space-x-2">
-                            <Link href={`/shop/${p.category}/${p.slug}`} className="inline-flex p-2 border border-primary/20 text-primary hover:bg-secondary hover:text-white transition-colors" title="View product">
-                              <Eye className="w-4 h-4" />
-                            </Link>
-                            <button onClick={() => handleStartEdit(p)} className="inline-flex p-2 border border-primary/20 text-primary hover:bg-secondary hover:text-white transition-colors" title="Edit product">
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => handleDelete(p.id)} className="inline-flex p-2 border border-red-200 text-red-500 hover:bg-red-500 hover:text-white transition-colors" title="Delete product">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
+        {tab === 'dashboard' && <section className="space-y-8">
+          <div className="flex flex-wrap justify-between gap-4"><div><h1 className="font-display text-3xl font-bold text-primary">Dashboard</h1><p className="text-text-muted text-sm mt-1">Manage your live store content.</p></div>
+          <button onClick={importExisting} className="px-5 py-3 bg-secondary text-white text-xs font-bold uppercase tracking-wider">Import Existing Site Data</button></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">{[
+            ['Products', items.length], ['Homepage Slides', slides.length], ['Customers', 'Live DB']
+          ].map(([a,b])=><div key={String(a)} className="bg-white border border-secondary/20 p-6"><p className="text-[10px] uppercase tracking-widest text-text-muted font-bold">{a}</p><p className="text-3xl font-bold text-primary mt-2">{b}</p></div>)}</div>
+          <div className="bg-white border border-secondary/20 p-6"><h2 className="font-display text-xl font-bold text-primary mb-3">Setup status</h2><p className="text-sm text-text-muted">Use the import button once to copy your existing hard-coded products and homepage slides into Supabase. After that, all edits are stored in the database.</p></div>
+        </section>}
 
-          {/* Tab 3: Add/Edit Product Form */}
-          {activeTab === 'add_product' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              <div>
-                <h1 className="font-display text-3xl font-bold text-primary">
-                  {isEditing ? `Edit Product: ${formData.name}` : 'Create New Product'}
-                </h1>
-                <p className="text-text-muted text-sm mt-1">
-                  {isEditing ? 'Modify the details of this specialty product.' : 'Add a new authentic recipe to the catalog.'}
-                </p>
-              </div>
+        {tab === 'products' && <section className="space-y-6">
+          <div className="flex justify-between items-center"><div><h1 className="font-display text-3xl font-bold text-primary">Products</h1><p className="text-sm text-text-muted">{items.length} products in database.</p></div><button onClick={startAdd} className="px-5 py-3 bg-primary text-white text-xs font-bold uppercase"><Plus className="w-4 h-4 inline mr-2"/>Add Product</button></div>
+          <div className="bg-white border border-secondary/20 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-left text-xs"><thead className="bg-bg-warm text-[10px] uppercase font-black"><tr><th className="p-4">Product</th><th className="p-4">Category</th><th className="p-4">Price</th><th className="p-4">Stock</th><th className="p-4 text-right">Actions</th></tr></thead><tbody>{items.map(p=><tr key={p.id} className="border-t border-secondary/10"><td className="p-4 flex gap-3 items-center"><img src={p.image} className="w-12 h-12 object-cover" alt=""/><div><b>{p.name}</b><div className="text-[10px] text-text-muted">{p.slug}</div></div></td><td className="p-4 capitalize">{p.category}</td><td className="p-4 font-bold">Rs. {p.price.toLocaleString()}</td><td className="p-4">{p.availability}</td><td className="p-4 text-right space-x-1"><Link href={`/product/${p.slug}`} className="inline-flex p-2 border"><Eye className="w-4 h-4"/></Link><button onClick={()=>startEdit(p)} className="p-2 border"><Edit className="w-4 h-4"/></button><button onClick={()=>deleteProduct(p.id)} className="p-2 border border-red-200 text-red-600"><Trash2 className="w-4 h-4"/></button></td></tr>)}</tbody></table></div></div>
+        </section>}
 
-              <div className="bg-white border border-secondary/20 shadow-sm p-8">
-                <form onSubmit={handleSaveProduct} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Product Name *</label>
-                      <input type="text" name="name" required value={formData.name} onChange={handleInputChange} placeholder="e.g. Aloo Bukhara Chutney"
-                        className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Category *</label>
-                      <select name="category" required value={formData.category} onChange={handleInputChange}
-                        className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors">
-                        {CATEGORIES.map(cat => <option key={cat.slug} value={cat.slug}>{cat.name}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Price (PKR) *</label>
-                      <input type="number" name="price" required value={formData.price} onChange={handleInputChange} placeholder="e.g. 750"
-                        className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Compare At Price (PKR) - Optional</label>
-                      <input type="number" name="originalPrice" value={formData.originalPrice} onChange={handleInputChange} placeholder="e.g. 950"
-                        className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Stock Availability *</label>
-                      <select name="availability" required value={formData.availability} onChange={handleInputChange}
-                        className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors">
-                        <option value="in-stock">In Stock</option>
-                        <option value="low-stock">Low Stock</option>
-                        <option value="out-of-stock">Out of Stock</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Product Ribbon Badge</label>
-                      <input type="text" name="badge" value={formData.badge} onChange={handleInputChange} placeholder="e.g. New, Bestseller"
-                        className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Weights Available</label>
-                      <input type="text" name="weight" value={formData.weight} onChange={handleInputChange} placeholder="500g, 1kg"
-                        className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Image Path</label>
-                      <input type="text" name="image" value={formData.image} onChange={handleInputChange} placeholder="/images/products/new_product_0.jpg"
-                        className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Ingredients (comma-separated)</label>
-                      <input type="text" name="ingredients" value={formData.ingredients} onChange={handleInputChange} placeholder="e.g. Raw Mangoes, Mustard Oil, Kalonji"
-                        className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Benefits (comma-separated)</label>
-                      <input type="text" name="benefits" value={formData.benefits} onChange={handleInputChange} placeholder="e.g. Supports digestion, Rich in antioxidants"
-                        className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
-                    </div>
-                  </div>
+        {tab === 'add_product' && <section className="max-w-4xl space-y-6"><div><h1 className="font-display text-3xl font-bold text-primary">{editId ? 'Edit Product' : 'Add Product'}</h1><p className="text-sm text-text-muted">Changes are saved directly to Supabase.</p></div><form onSubmit={saveProduct} className="bg-white border border-secondary/20 p-6 grid md:grid-cols-2 gap-5">
+          {[
+            ['name','Product Name'],['price','Price (PKR)'],['originalPrice','Original Price (PKR)'],['weight','Weights (comma separated)'],['ingredients','Ingredients (comma separated)'],['benefits','Benefits (comma separated)']
+          ].map(([key,label])=><div key={key}><label className="block text-[10px] uppercase font-black tracking-widest mb-2">{label}</label><input required={key==='name'||key==='price'} value={(form as any)[key]} onChange={e=>setForm({...form,[key]:e.target.value})} className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream"/></div>)}
+          <div><label className="block text-[10px] uppercase font-black tracking-widest mb-2">Category</label><select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream">{CATEGORIES.map(c=><option key={c.slug} value={c.slug}>{c.name}</option>)}</select></div>
+          <div><label className="block text-[10px] uppercase font-black tracking-widest mb-2">Availability</label><select value={form.availability} onChange={e=>setForm({...form,availability:e.target.value as Product['availability']})} className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream"><option value="in-stock">In Stock</option><option value="low-stock">Low Stock</option><option value="out-of-stock">Out of Stock</option></select></div>
+          <div><label className="block text-[10px] uppercase font-black tracking-widest mb-2">Badge</label><input value={form.badge} onChange={e=>setForm({...form,badge:e.target.value})} placeholder="New, Bestseller" className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream"/></div>
+          <div><label className="block text-[10px] uppercase font-black tracking-widest mb-2">Image from computer</label><input type="file" accept="image/*" onChange={e=>setImageFile(e.target.files?.[0] || null)} className="w-full text-sm"/>{form.image && <img src={form.image} alt="" className="w-20 h-20 object-cover mt-3"/>}</div>
+          <div className="md:col-span-2"><label className="block text-[10px] uppercase font-black tracking-widest mb-2">Description</label><textarea required rows={5} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream"/></div>
+          <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={form.isFeatured} onChange={e=>setForm({...form,isFeatured:e.target.checked})}/> Featured product</label>
+          <div className="md:col-span-2 flex gap-3"><button type="submit" className="px-7 py-3 bg-primary text-white text-xs font-bold uppercase">{editId ? 'Save Changes' : 'Publish Product'}</button><button type="button" onClick={()=>setTab('products')} className="px-7 py-3 border text-xs font-bold uppercase">Cancel</button></div>
+        </form></section>}
 
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Product Description *</label>
-                    <textarea name="description" required rows={4} value={formData.description} onChange={handleInputChange} placeholder="Describe the recipe and taste..."
-                      className="w-full border border-secondary/30 px-4 py-3 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors resize-none" />
-                  </div>
+        {tab === 'slider' && <section className="space-y-6"><div className="flex justify-between items-center"><div><h1 className="font-display text-3xl font-bold text-primary">Homepage Slider</h1><p className="text-sm text-text-muted">Upload images and change slider text/buttons.</p></div><button onClick={addSlide} className="px-5 py-3 bg-primary text-white text-xs font-bold uppercase"><Plus className="w-4 h-4 inline mr-2"/>Add Slide</button></div>
+          {slides.map((s,idx)=><SliderEditor key={s.id} slide={s} index={idx} onSave={updateSlide} onDelete={deleteSlide}/>)}
+          {!slides.length && <div className="bg-white p-8 border text-sm text-text-muted">No slides yet. Use Import Existing Site Data or Add Slide.</div>}
+        </section>}
 
-                  <div className="flex gap-4 pt-6 border-t border-secondary/20">
-                    <button type="submit" className="px-8 py-4 bg-primary text-white font-bold text-xs uppercase tracking-[0.2em] hover:bg-secondary transition-colors">
-                      {isEditing ? 'Save Changes' : 'Publish Product'}
-                    </button>
-                    <button type="button" onClick={() => { setIsEditing(false); setEditProductId(null); setActiveTab('products'); }} className="px-8 py-4 bg-white border border-primary/20 text-primary font-bold text-xs uppercase tracking-[0.2em] hover:bg-primary/5 transition-colors">
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
+        {tab === 'settings' && <section className="space-y-6 max-w-3xl"><div><h1 className="font-display text-3xl font-bold text-primary">Store Settings</h1><p className="text-sm text-text-muted">These values are stored in Supabase.</p></div><div className="bg-white border p-6 grid md:grid-cols-2 gap-5">
+          {[
+            ['store_name','Store Name'],['support_email','Support Email'],['whatsapp','WhatsApp'],['phone','Phone'],['address','Address'],['business_hours','Business Hours'],['free_shipping_threshold','Free Shipping Threshold'],['shipping_fee','Shipping Fee'],['facebook_url','Facebook URL'],['instagram_url','Instagram URL'],['tiktok_url','TikTok URL']
+          ].map(([key,label])=><div key={key} className={key==='address'||key==='business_hours'?'md:col-span-2':''}><label className="block text-[10px] uppercase font-black tracking-widest mb-2">{label}</label>{key==='address'||key==='business_hours'?<textarea rows={3} value={settings[key]||''} onChange={e=>setSettings({...settings,[key]:e.target.value})} className="w-full border px-4 py-3 text-sm bg-bg-cream"/>:<input value={settings[key]??''} onChange={e=>setSettings({...settings,[key]:e.target.value})} className="w-full border px-4 py-3 text-sm bg-bg-cream"/>}</div>)}
+          <div className="md:col-span-2"><button onClick={saveSettings} className="px-7 py-3 bg-primary text-white text-xs font-bold uppercase">Save Settings</button></div>
+        </div></section>}
 
-          {/* Tab 4: Orders */}
-          {activeTab === 'orders' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              <div>
-                <h1 className="font-display text-3xl font-bold text-primary">Orders Management</h1>
-                <p className="text-text-muted text-sm mt-1">Track and manage customer orders.</p>
-              </div>
+        {tab === 'orders' && <section className="bg-white border p-8"><h1 className="font-display text-3xl font-bold text-primary">Orders</h1><p className="text-sm text-text-muted mt-2">Orders are stored in the Supabase orders table. The next step can connect the checkout to this table.</p></section>}
+        {tab === 'customers' && <section className="bg-white border p-8"><h1 className="font-display text-3xl font-bold text-primary">Customers</h1><p className="text-sm text-text-muted mt-2">Customers are stored in the Supabase customers table. The next step can connect registration and checkout records.</p></section>}
+      </main>
+    </div>
+  </ShopLayout></ProtectedLayout>;
+}
 
-              <div className="bg-white border border-secondary/20 shadow-sm overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-secondary/10 bg-bg-warm text-[10px] font-black uppercase tracking-wider text-primary">
-                      <th className="p-4">Order ID</th>
-                      <th className="p-4">Customer</th>
-                      <th className="p-4">Date</th>
-                      <th className="p-4">Total</th>
-                      <th className="p-4">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-secondary/5 text-xs text-text-dark">
-                    {mockOrders.map(order => (
-                      <tr key={order.id} className="hover:bg-bg-warm/30 transition-colors">
-                        <td className="p-4 font-bold">{order.id}</td>
-                        <td className="p-4">{order.customer}</td>
-                        <td className="p-4 text-text-muted">{order.date}</td>
-                        <td className="p-4 font-bold">Rs. {order.total.toLocaleString()}</td>
-                        <td className="p-4">
-                          <span className={`px-2 py-1 text-[9px] font-black uppercase rounded-sm ${
-                            order.status === 'Delivered' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-                          }`}>{order.status}</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 5: Customers */}
-          {activeTab === 'customers' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              <div>
-                <h1 className="font-display text-3xl font-bold text-primary">Customers Directory</h1>
-                <p className="text-text-muted text-sm mt-1">View and manage your loyal customers.</p>
-              </div>
-
-              <div className="bg-white border border-secondary/20 shadow-sm overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-secondary/10 bg-bg-warm text-[10px] font-black uppercase tracking-wider text-primary">
-                      <th className="p-4">Customer ID</th>
-                      <th className="p-4">Name</th>
-                      <th className="p-4">Email</th>
-                      <th className="p-4">Orders</th>
-                      <th className="p-4">Total Spent</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-secondary/5 text-xs text-text-dark">
-                    {mockCustomers.map(c => (
-                      <tr key={c.id} className="hover:bg-bg-warm/30 transition-colors">
-                        <td className="p-4 text-text-muted">{c.id}</td>
-                        <td className="p-4 font-bold text-primary">{c.name}</td>
-                        <td className="p-4">{c.email}</td>
-                        <td className="p-4 font-bold">{c.orders}</td>
-                        <td className="p-4 font-bold text-green-700">Rs. {c.totalSpent.toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 6: Store Settings */}
-          {activeTab === 'settings' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              <div>
-                <h1 className="font-display text-3xl font-bold text-primary">Store Settings</h1>
-                <p className="text-text-muted text-sm mt-1">Manage admin credentials and public store contact details.</p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Admin Profile Details */}
-                <div className="bg-white border border-secondary/20 shadow-sm p-6 sm:p-8">
-                  <h2 className="font-display font-bold text-xl text-primary mb-6 border-b border-secondary/10 pb-4">Admin Profile & Security</h2>
-                  
-                  <form className="space-y-5">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Admin Full Name</label>
-                      <input type="text" defaultValue="Gharelu Achaar Admin" className="w-full border border-secondary/30 px-4 py-2.5 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Login Email</label>
-                      <input type="email" defaultValue="admin@ghareluachaar.pk" className="w-full border border-secondary/30 px-4 py-2.5 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
-                    </div>
-
-                    <div className="pt-2">
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Change Password</label>
-                      <input type="password" placeholder="Enter new password" className="w-full border border-secondary/30 px-4 py-2.5 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors mb-3" />
-                      <input type="password" placeholder="Confirm new password" className="w-full border border-secondary/30 px-4 py-2.5 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
-                    </div>
-
-                    <div className="pt-4">
-                      <button type="button" className="px-6 py-3 bg-primary text-white text-[10px] font-bold uppercase tracking-wider hover:bg-secondary transition-colors">
-                        Update Security
-                      </button>
-                    </div>
-                  </form>
-                </div>
-
-                {/* Public Store Contact Info */}
-                <div className="bg-white border border-secondary/20 shadow-sm p-6 sm:p-8">
-                  <h2 className="font-display font-bold text-xl text-primary mb-6 border-b border-secondary/10 pb-4">Public Contact Details</h2>
-                  
-                  <form className="space-y-5">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Support Email</label>
-                      <input type="email" defaultValue="support@ghareluachaar.pk" className="w-full border border-secondary/30 px-4 py-2.5 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Support WhatsApp / Call Number</label>
-                      <input type="tel" defaultValue="+92 300 1234567" className="w-full border border-secondary/30 px-4 py-2.5 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors" />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Physical Store Location / Address</label>
-                      <textarea rows={3} defaultValue="Heritage Hub, Multan Road, Lahore, Pakistan" className="w-full border border-secondary/30 px-4 py-2.5 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors resize-none" />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-text-muted mb-2">Business Hours</label>
-                      <textarea rows={2} defaultValue="Mon - Sat: 9:00am - 8:00pm\nSunday: 11:00am - 5:00pm" className="w-full border border-secondary/30 px-4 py-2.5 text-sm bg-bg-cream focus:outline-none focus:border-secondary transition-colors resize-none" />
-                    </div>
-
-                    <div className="pt-4">
-                      <button type="button" className="px-6 py-3 bg-primary text-white text-[10px] font-bold uppercase tracking-wider hover:bg-secondary transition-colors">
-                        Save Contact Details
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          )}
-
-        </main>
+function SliderEditor({ slide, index, onSave, onDelete }: { slide: any; index: number; onSave: (s:any,f?:File)=>Promise<void>; onDelete:(id:string)=>Promise<void> }) {
+  const [form, setForm] = useState(slide);
+  const [file, setFile] = useState<File | null>(null);
+  return <div className="bg-white border border-secondary/20 p-6">
+    <div className="grid md:grid-cols-[260px_1fr] gap-6">
+      <div><img src={form.image} alt="" className="w-full aspect-video object-cover"/><input type="file" accept="image/*" onChange={e=>setFile(e.target.files?.[0]||null)} className="mt-3 w-full text-xs"/></div>
+      <div className="grid md:grid-cols-2 gap-3">
+        {['title','title_highlight','subtitle','primary_button_label','primary_button_link','secondary_button_label','secondary_button_link'].map(k=><input key={k} value={form[k]||''} onChange={e=>setForm({...form,[k]:e.target.value})} placeholder={k.replaceAll('_',' ')} className="border px-3 py-2 text-sm bg-bg-cream"/>)}
+        <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={!!form.is_active} onChange={e=>setForm({...form,is_active:e.target.checked})}/> Active</label>
+        <div className="flex gap-2"><button onClick={()=>onSave({...form,display_order:index},file||undefined)} className="px-5 py-2 bg-primary text-white text-xs font-bold uppercase"><Upload className="w-3 h-3 inline mr-1"/>Save</button><button onClick={()=>onDelete(form.id)} className="px-5 py-2 bg-red-50 text-red-600 text-xs font-bold uppercase">Delete</button></div>
       </div>
-    </ShopLayout></ProtectedLayout>
-  );
+    </div>
+  </div>;
 }
