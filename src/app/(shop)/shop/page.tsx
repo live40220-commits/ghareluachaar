@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useMemo, Suspense } from 'react';
+import React, { useState, useMemo, Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ShopLayout } from '@/components/layout/ShopLayout';
 import { ProductCard } from '@/components/product/ProductCard';
-import { products, CATEGORIES } from '@/data/products';
+import { products as staticProducts, CATEGORIES } from '@/data/products';
+import { supabase } from '@/lib/supabase';
 import { Search, SlidersHorizontal, X, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,7 +18,7 @@ const SORT_OPTIONS = [
   { label: 'Top Rated', value: 'rating' },
 ];
 
-const bestSellers = products.filter(p => p.isBestSeller).slice(0, 3);
+const bestSellers = staticProducts.filter(p => p.isBestSeller).slice(0, 3);
 
 function ShopContent() {
   const searchParams = useSearchParams();
@@ -32,6 +33,21 @@ function ShopContent() {
   const [sortOpen, setSortOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState({ categories: true, availability: true, price: true });
+  const [products, setProducts] = useState(staticProducts);
+
+  useEffect(() => {
+    supabase.from('products').select('*').order('created_at', { ascending: false }).then(({ data }) => {
+      if (!data?.length) return;
+      setProducts(data.map((p: any) => ({
+        id: p.id, name: p.name, slug: p.slug, category: p.category, price: Number(p.price),
+        originalPrice: p.original_price == null ? undefined : Number(p.original_price), image: p.image || '',
+        rating: Number(p.rating || 0), reviewsCount: Number(p.reviews_count || 0), description: p.description || '',
+        ingredients: p.ingredients || [], benefits: p.benefits || [], weight: p.weight || ['500g'],
+        availability: p.availability, isNew: !!p.is_new, isBestSeller: !!p.is_best_seller, isFeatured: !!p.is_featured,
+        discount: p.discount == null ? undefined : Number(p.discount), weightPrices: p.weight_prices || undefined,
+      })));
+    });
+  }, []);
 
   const toggle = (section: keyof typeof expandedSections) =>
     setExpandedSections(p => ({ ...p, [section]: !p[section] }));
