@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft, ArrowRight, ChevronRight, ShieldCheck, Truck, Leaf, Star } from 'lucide-react';
 import { ShopLayout } from '@/components/layout/ShopLayout';
 import { ProductCard } from '@/components/product/ProductCard';
-import { CATEGORIES, products } from '@/data/products';
+import { CATEGORIES, products as staticProducts } from '@/data/products';
+import { supabase } from '@/lib/supabase';
 
 const HERO_SLIDES = [
   {
@@ -85,13 +86,44 @@ function SectionHeader({ label, href }: { label: string; href: string }) {
 export default function Home() {
   const [slide, setSlide] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [products, setProducts] = useState(staticProducts);
+  const [heroSlides, setHeroSlides] = useState(HERO_SLIDES);
+
+  useEffect(() => {
+    const loadHomepage = async () => {
+      const [{ data: productRows }, { data: slideRows }] = await Promise.all([
+        supabase.from('products').select('*').order('created_at', { ascending: false }),
+        supabase.from('slider_slides').select('*').eq('is_active', true).order('display_order', { ascending: true }),
+      ]);
+
+      if (productRows?.length) {
+        setProducts(productRows.map((p: any) => ({
+          id: p.id, name: p.name, slug: p.slug, category: p.category, price: Number(p.price),
+          originalPrice: p.original_price == null ? undefined : Number(p.original_price), image: p.image || '',
+          rating: Number(p.rating || 0), reviewsCount: Number(p.reviews_count || 0), description: p.description || '',
+          ingredients: p.ingredients || [], benefits: p.benefits || [], weight: p.weight || ['500g'],
+          availability: p.availability, isNew: !!p.is_new, isBestSeller: !!p.is_best_seller, isFeatured: !!p.is_featured,
+          discount: p.discount == null ? undefined : Number(p.discount), weightPrices: p.weight_prices || undefined,
+        })));
+      }
+
+      if (slideRows?.length) {
+        setHeroSlides(slideRows.map((p: any) => ({
+          image: p.image, alt: p.alt || 'Gharelu Achaar', title: p.title || '', titleHighlight: p.title_highlight || '',
+          subtitle: p.subtitle || '', cta: { label: p.primary_button_label || 'Shop Now', href: p.primary_button_link || '/shop' },
+          ctaSecondary: { label: p.secondary_button_label || 'View All Products', href: p.secondary_button_link || '/shop' },
+        })));
+      }
+    };
+    loadHomepage();
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setSlide(current => (current + 1) % HERO_SLIDES.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, []);
+  }, [heroSlides.length]);
 
   const bestSellers = products.filter(product => product.isBestSeller).slice(0, 4);
   const newArrivals = products.filter(product => product.isNew).slice(0, 4);
@@ -100,7 +132,7 @@ export default function Home() {
   const prev = () => setSlide(current => (current - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
   const next = () => setSlide(current => (current + 1) % HERO_SLIDES.length);
 
-  const currentSlide = HERO_SLIDES[slide];
+  const currentSlide = heroSlides[slide] || heroSlides[0];
 
   return (
     <ShopLayout>
