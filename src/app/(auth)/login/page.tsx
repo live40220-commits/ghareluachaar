@@ -100,9 +100,10 @@ export default function LoginPage() {
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/30" />
                 <input 
-                  type="password" 
-                  required 
-                  defaultValue="123456"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
                   placeholder="••••••"
                   className="w-full border border-primary/15 pl-10 pr-4 py-3 text-xs text-primary input-premium" 
                 />
