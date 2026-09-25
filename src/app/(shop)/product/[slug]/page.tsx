@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { products, getProductPrice, getProductOriginalPrice } from '@/data/products';
+import { products as staticProducts, getProductPrice, getProductOriginalPrice, Product } from '@/data/products';
+import { supabase } from '@/lib/supabase';
 import { ShopLayout } from '@/components/layout/ShopLayout';
 import { useShop } from '@/context/ShopContext';
 import { ProductCard } from '@/components/product/ProductCard';
@@ -15,17 +16,34 @@ interface Props { params: Promise<{ slug: string }> }
 
 export default function ProductPage({ params }: Props) {
   const resolvedParams = React.use(params);
-  const product = products.find(p => p.slug === resolvedParams.slug);
+  const initialProduct = staticProducts.find(p => p.slug === resolvedParams.slug);
+  const [product, setProduct] = useState<Product | null>(initialProduct || null);
   const { addToCart, toggleWishlist, wishlist } = useShop();
   const [qty, setQty] = useState(1);
-  const [selectedWeight, setSelectedWeight] = useState(product?.weight[0] ?? '');
+  const [selectedWeight, setSelectedWeight] = useState(initialProduct?.weight[0] ?? '');
+
+  React.useEffect(() => {
+    supabase.from('products').select('*').eq('slug', resolvedParams.slug).maybeSingle().then(({ data }) => {
+      if (!data) return;
+      const mapped: Product = {
+        id: data.id, name: data.name, slug: data.slug, category: data.category, price: Number(data.price),
+        originalPrice: data.original_price == null ? undefined : Number(data.original_price), image: data.image || '',
+        rating: Number(data.rating || 0), reviewsCount: Number(data.reviews_count || 0), description: data.description || '',
+        ingredients: data.ingredients || [], benefits: data.benefits || [], weight: data.weight || ['500g'],
+        availability: data.availability, isNew: !!data.is_new, isBestSeller: !!data.is_best_seller, isFeatured: !!data.is_featured,
+        discount: data.discount == null ? undefined : Number(data.discount), weightPrices: data.weight_prices || undefined,
+      };
+      setProduct(mapped);
+      setSelectedWeight(mapped.weight[0] || '');
+    });
+  }, [resolvedParams.slug]);
   const [activeTab, setActiveTab] = useState<'desc' | 'ingredients' | 'benefits'>('desc');
   const [added, setAdded] = useState(false);
 
   if (!product) return notFound();
 
   const isWishlisted = wishlist.includes(product.id);
-  const related = products.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
+  const related = staticProducts.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
 
   const handleAddToCart = () => {
     addToCart(product, qty, selectedWeight);
