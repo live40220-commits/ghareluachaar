@@ -13,24 +13,29 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
   const [isRegister, setIsRegister] = useState(false);
   const [msg, setMsg] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMsg('');
+    if (!isRegister && !password) {
+      setMsg('Please enter your password.');
+      return;
+    }
     if (isRegister && !name) {
       setMsg('Please enter your name.');
       return;
     }
-    
-    login(email, name || 'Customer');
-    
-    // Redirect admin to admin panel, users to their account
-    if (email.trim().toLowerCase() === 'admin@ghareluachaar.pk') {
-      router.push('/admin');
-    } else {
-      router.push('/account');
+
+    const result = await login(email, password, name || 'Customer');
+    if (!result.ok) {
+      setMsg(result.message || 'Login failed. Please check your email and password.');
+      return;
     }
+
+    router.push(email.trim().toLowerCase() === 'admin@ghareluachaar.pk' ? '/admin' : '/account');
   };
 
   return (
