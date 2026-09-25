@@ -1,7 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, products, getProductPrice } from '@/data/products';
+import { Product, getProductPrice } from '@/data/products';
+import { supabase } from '@/lib/supabase';
 
 export interface CartItem {
   product: Product;
@@ -36,7 +37,7 @@ interface ShopContextType {
   setIsCartOpen: (isOpen: boolean) => void;
   applyCoupon: (code: string) => boolean;
   removeCoupon: () => void;
-  login: (email: string, name: string) => void;
+  login: (email: string, password: string, name?: string) => Promise<{ ok: boolean; message?: string }>;
   register: (name: string, email: string) => void;
   logout: () => void;
   cartSubtotal: number;
@@ -60,15 +61,35 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const freeShippingThreshold = 2999;
   const standardShippingFee = 250;
 
-  // Load cart, wishlist, and user from localStorage on client mount
+  // Load cart, wishlist, and saved customer session on client mount
   useEffect(() => {
     const savedCart = localStorage.getItem('ga_cart');
     const savedWishlist = localStorage.getItem('ga_wishlist');
     const savedUser = localStorage.getItem('ga_user');
-    
     if (savedCart) setCart(JSON.parse(savedCart));
     if (savedWishlist) setWishlist(JSON.parse(savedWishlist));
     if (savedUser) setUser(JSON.parse(savedUser));
+
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted || !data.session?.user) return;
+      const email = data.session.user.email || '';
+      if (email === 'admin@ghareluachaar.pk') {
+        const adminUser = { name: 'Store Admin', email, isAdmin: true };
+        setUser(adminUser);
+        localStorage.setItem('ga_user', JSON.stringify(adminUser));
+      }
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session?.user) return;
+      const email = session.user.email || '';
+      if (email === 'admin@ghareluachaar.pk') {
+        const adminUser = { name: 'Store Admin', email, isAdmin: true };
+        setUser(adminUser);
+        localStorage.setItem('ga_user', JSON.stringify(adminUser));
+      }
+    });
+    return () => { mounted = false; listener.subscription.unsubscribe(); };
   }, []);
 
   // Save changes to localStorage
@@ -158,27 +179,31 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const ADMIN_EMAIL = 'admin@ghareluachaar.pk';
-  const ADMIN_PASSWORD = 'admin123';
 
-  const login = (email: string, name: string) => {
-    const isAdmin = email.trim().toLowerCase() === ADMIN_EMAIL;
-    const mockUser: User = {
-      name: isAdmin ? 'Store Admin' : name,
-      email,
-      phone: '03001234567',
-      address: 'House #42, Block C, Gulberg III',
-      city: 'Lahore',
-      isAdmin,
-    };
+  const login = async (email: string, password: string, name = 'Customer') => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail === ADMIN_EMAIL) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+      if (error || !data.user) return { ok: false, message: error?.message || 'Admin login failed.' };
+      const adminUser = { name: 'Store Admin', email: normalizedEmail, isAdmin: true };
+      setUser(adminUser);
+      localStorage.setItem('ga_user', JSON.stringify(adminUser));
+      return { ok: true };
+    }
+    const mockUser = { name, email: normalizedEmail, isAdmin: false };
+    setUser(mockUser);
+    localStorage.setItem('ga_user', JSON.stringify(mockUser));
+    return { ok: true };
+  };
+
+  const register = (name: string, email: string) => {
+    const mockUser = { name, email: email.trim().toLowerCase(), isAdmin: false };
     setUser(mockUser);
     localStorage.setItem('ga_user', JSON.stringify(mockUser));
   };
 
-  const register = (name: string, email: string) => {
-    login(email, name);
-  };
-
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
     localStorage.removeItem('ga_user');
   };
